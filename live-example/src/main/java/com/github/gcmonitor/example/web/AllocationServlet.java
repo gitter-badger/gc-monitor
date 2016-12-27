@@ -1,4 +1,4 @@
-package com.github.gcmonitor.example;
+package com.github.gcmonitor.example.web;
 
 import javax.servlet.http.HttpServlet;
 
