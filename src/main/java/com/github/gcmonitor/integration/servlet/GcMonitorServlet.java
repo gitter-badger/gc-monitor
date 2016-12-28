@@ -5,5 +5,4 @@ import javax.servlet.http.HttpServlet;
 public class GcMonitorServlet extends HttpServlet {
 
 
-
 }

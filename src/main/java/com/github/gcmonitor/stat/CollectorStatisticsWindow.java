@@ -41,8 +41,8 @@ public class CollectorStatisticsWindow {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CollectorStatisticsWindow{");
         sb.append("windowDurationSeconds=").append(windowDurationSeconds);
-        sb.append(", counter=").append(counter);
-        sb.append(", histogram=").append(histogram);
+        sb.append(", millisSpentInGc=").append(counter.getSum());
+        sb.append(", histogram=").append(histogram.getSnapshot().toString());
         sb.append('}');
         return sb.toString();
     }
