@@ -1,7 +1,6 @@
 package com.github.gcmonitor.integration.jmx.data.type;
 
-import com.github.gcmonitor.integration.jmx.data.GcCollectorData;
-import com.github.gcmonitor.stat.CollectorStatistics;
+import com.github.gcmonitor.GcMonitorConfiguration;
 
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenDataException;
@@ -17,33 +16,30 @@ public class GcMonitorDataType extends CompositeType {
 
     private final Map<String, GcCollectorDataType> collectorTypes;
 
-    public static GcMonitorDataType buildCompositeType(Map<String, CollectorStatistics> statistics) {
-        Set<String> collectorNames = statistics.keySet();
+    public static GcMonitorDataType buildCompositeType(Set<String> collectorNames, GcMonitorConfiguration configuration) {
         String[] itemNames = new String[collectorNames.size()];
         String[] itemDescriptions = new String[collectorNames.size()];
         OpenType<?>[] itemTypes = new OpenType<?>[collectorNames.size()];
         Map<String, GcCollectorDataType> collectorTypes = new HashMap<>();
         int i = 0;
+        GcCollectorDataType collectorType = GcCollectorDataType.buildCompositeType(configuration);
         for (String collectorName : collectorNames) {
-            CollectorStatistics collectorStatistics = statistics.get(collectorName);
-            GcCollectorDataType collectorType = GcCollectorDataType.buildCompositeType(collectorName, collectorStatistics);
-
             collectorTypes.put(collectorName, collectorType);
             itemNames[i] = collectorName;
-            itemDescriptions[i] = collectorType.getDescription();
+            itemDescriptions[i] = "Shows aggregated information about garbage collector [" + collectorName + "]";
             itemTypes[i] = collectorType;
             i++;
         }
 
         try {
-            return new GcMonitorDataType(TYPE_NAME, DESCRIPTION, itemNames, itemDescriptions, itemTypes, collectorTypes);
+            return new GcMonitorDataType(itemNames, itemDescriptions, itemTypes, collectorTypes);
         } catch (OpenDataException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public GcMonitorDataType(String typeName, String description, String[] itemNames, String[] itemDescriptions, OpenType<?>[] itemTypes, Map<String, GcCollectorDataType> collectorTypes) throws OpenDataException {
-        super(typeName, description, itemNames, itemDescriptions, itemTypes);
+    public GcMonitorDataType(String[] itemNames, String[] itemDescriptions, OpenType<?>[] itemTypes, Map<String, GcCollectorDataType> collectorTypes) throws OpenDataException {
+        super(TYPE_NAME, DESCRIPTION, itemNames, itemDescriptions, itemTypes);
         this.collectorTypes = collectorTypes;
     }
 

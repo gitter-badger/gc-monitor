@@ -4,8 +4,6 @@ import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.integration.jmx.data.GcMonitorData;
 import com.github.gcmonitor.integration.jmx.data.type.GcMonitorDataType;
 
-import javax.management.openmbean.CompositeType;
-
 public class GcMonitorImpl implements GcMonitorMXBean {
 
     private final GcMonitor gcMonitor;
@@ -13,12 +11,14 @@ public class GcMonitorImpl implements GcMonitorMXBean {
 
     public GcMonitorImpl(GcMonitor gcMonitor) {
         this.gcMonitor = gcMonitor;
-        this.type = GcMonitorDataType.buildCompositeType(gcMonitor.getStatistics());
+        this.type = GcMonitorDataType.buildCompositeType(gcMonitor.getCollectorNames(), gcMonitor.getConfiguration());
     }
 
     @Override
     public GcMonitorData getGcMonitorData() {
-        return new GcMonitorData(type, gcMonitor.getStatistics());
+        GcMonitorData[] dataRef = new GcMonitorData[1];
+        gcMonitor.getStatistics(statistics -> dataRef[0] = new GcMonitorData(type, statistics));
+        return dataRef[0];
     }
 
 }

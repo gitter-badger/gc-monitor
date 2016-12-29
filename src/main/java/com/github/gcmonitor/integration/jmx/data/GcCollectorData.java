@@ -19,12 +19,12 @@ public class GcCollectorData implements CompositeData {
     public GcCollectorData(GcCollectorDataType type, CollectorStatistics collectorStatistics) {
         this.type = type;
         this.data = new HashMap<>();
+        GcCollectorWindowDataType windowType = type.getWindowType();
         for (CollectorStatisticsWindow window : collectorStatistics.getWindows()) {
             long duration = window.getWindowDurationSeconds();
             String windowName = type.getWindowName(duration);
-            GcCollectorWindowDataType windowType = type.getWindowType(windowName);
             GcCollectorWindowData windowData = new GcCollectorWindowData(windowType, window);
-            data.put(windowName);
+            data.put(windowName, windowData);
         }
     }
 

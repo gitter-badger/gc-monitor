@@ -9,10 +9,7 @@ import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class GcMonitor implements NotificationListener, AutoCloseable {
@@ -65,6 +62,10 @@ public class GcMonitor implements NotificationListener, AutoCloseable {
 
     public GcMonitorConfiguration getConfiguration() {
         return configuration;
+    }
+
+    public Set<String> getCollectorNames() {
+        return statistics.keySet();
     }
 
     @Override
