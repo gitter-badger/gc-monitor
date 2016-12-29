@@ -9,10 +9,10 @@ public class CollectorStatistics {
 
     private final CollectorStatisticsWindow[] windows;
 
-    public CollectorStatistics(long[] timeWindows) {
+    public CollectorStatistics(long[] timeWindows, double[] percentiles) {
         this.windows = new CollectorStatisticsWindow[timeWindows.length];
         for (int i = 0; i < windows.length; i++) {
-            windows[i] = new CollectorStatisticsWindow(i);
+            windows[i] = new CollectorStatisticsWindow(i, percentiles);
         }
     }
 

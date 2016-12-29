@@ -14,14 +14,17 @@ public class CollectorStatisticsWindow {
     private final long windowDurationSeconds;
     private final WindowCounter counter;
     private final Histogram histogram;
+    private final double[] percentiles;
 
-    public CollectorStatisticsWindow(long windowDurationSeconds) {
+    CollectorStatisticsWindow(long windowDurationSeconds, double[] percentiles) {
         this.windowDurationSeconds = windowDurationSeconds;
+        this.percentiles = percentiles;
         Duration rollingWindow = Duration.ofSeconds(windowDurationSeconds);
         this.counter = new SmoothlyDecayingRollingCounter(rollingWindow, GcMonitor.COUNTER_CHUNKS);
         this.histogram = new HdrBuilder()
                 .resetReservoirPeriodicallyByChunks(rollingWindow, GcMonitor.HISTOGRAM_CHUNKS)
                 .withHighestTrackableValue(GcMonitor.LONGEST_TRACKABLE_PAUSE_MILLIS, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .withPredefinedPercentiles(percentiles)
                 .buildHistogram();
     }
 
@@ -31,6 +34,10 @@ public class CollectorStatisticsWindow {
 
     public long getWindowDurationSeconds() {
         return windowDurationSeconds;
+    }
+
+    public double[] getPercentiles() {
+        return percentiles;
     }
 
     public WindowCounter getCounter() {

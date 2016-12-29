@@ -14,9 +14,9 @@ public final class MonitoredCollector {
     private final CollectorStatistics[] allStats;
     private final CollectorSnapshot snapshot;
 
-    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, CollectorStatistics globalStat, long[] timeWindows) {
+    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, CollectorStatistics globalStat, long[] timeWindows, double[] percentiles) {
         this.collectorMbean = collectorMbean;
-        this.collectorStat = new CollectorStatistics(timeWindows);
+        this.collectorStat = new CollectorStatistics(timeWindows, percentiles);
         this.globalStat = globalStat;
         this.allStats = new CollectorStatistics[] {globalStat, collectorStat};
         this.snapshot = new CollectorSnapshot(collectorMbean);
