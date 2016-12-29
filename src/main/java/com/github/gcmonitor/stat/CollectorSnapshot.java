@@ -2,22 +2,27 @@ package com.github.gcmonitor.stat;
 
 import java.lang.management.GarbageCollectorMXBean;
 
-/**
- * Created by vladimir.bukhtoyarov on 28.12.2016.
- */
 public class CollectorSnapshot {
 
-    long collectionTimeMillis;
-    long collectionCount;
+    private long collectionTimeMillis;
+    private long collectionCount;
 
     public CollectorSnapshot(GarbageCollectorMXBean collectorMbean) {
         this.collectionCount = collectorMbean.getCollectionCount();
         this.collectionTimeMillis = collectorMbean.getCollectionTime();
     }
 
-    void update(long collectionTimeMillis, long collectionCount) {
+    public void update(long collectionTimeMillis, long collectionCount) {
         this.collectionTimeMillis = collectionTimeMillis;
         this.collectionCount = collectionCount;
+    }
+
+    public long getCollectionCount() {
+        return collectionCount;
+    }
+
+    public long getCollectionTimeMillis() {
+        return collectionTimeMillis;
     }
 
     @Override

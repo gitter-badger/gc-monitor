@@ -1,18 +1,18 @@
 package com.github.gcmonitor.stat;
 
+import com.github.gcmonitor.GcMonitorConfiguration;
+
 import java.util.Arrays;
 
-/**
- * Created by vladimir.bukhtoyarov on 28.12.2016.
- */
 public class CollectorStatistics {
 
     private final CollectorStatisticsWindow[] windows;
 
-    public CollectorStatistics(long[] timeWindows, double[] percentiles) {
+    public CollectorStatistics(GcMonitorConfiguration configuration) {
+        long[] timeWindows = configuration.getTimeWindows();
         this.windows = new CollectorStatisticsWindow[timeWindows.length];
         for (int i = 0; i < windows.length; i++) {
-            windows[i] = new CollectorStatisticsWindow(i, percentiles);
+            windows[i] = new CollectorStatisticsWindow(timeWindows[i], configuration);
         }
     }
 

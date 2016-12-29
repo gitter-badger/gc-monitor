@@ -1,37 +1,39 @@
 package com.github.gcmonitor.stat;
 
+import com.github.gcmonitor.GcMonitorConfiguration;
+
 import javax.management.Notification;
 import java.lang.management.GarbageCollectorMXBean;
+import java.util.Optional;
 
-/**
- * Created by vladimir.bukhtoyarov on 28.12.2016.
- */
 public final class MonitoredCollector {
 
     private final GarbageCollectorMXBean collectorMbean;
-    private final CollectorStatistics collectorStat;
-    private final CollectorStatistics globalStat;
+    private final CollectorStatistics collectorStatistics;
     private final CollectorStatistics[] allStats;
     private final CollectorSnapshot snapshot;
 
-    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, CollectorStatistics globalStat, long[] timeWindows, double[] percentiles) {
+    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, Optional<CollectorStatistics> aggregatedStatistics, GcMonitorConfiguration configuration) {
         this.collectorMbean = collectorMbean;
-        this.collectorStat = new CollectorStatistics(timeWindows, percentiles);
-        this.globalStat = globalStat;
-        this.allStats = new CollectorStatistics[] {globalStat, collectorStat};
+        this.collectorStatistics = new CollectorStatistics(configuration);
+        if (aggregatedStatistics.isPresent()) {
+            this.allStats = new CollectorStatistics[] {aggregatedStatistics.get(), collectorStatistics};
+        } else {
+            this.allStats = new CollectorStatistics[] {collectorStatistics};
+        }
         this.snapshot = new CollectorSnapshot(collectorMbean);
     }
 
-    public CollectorStatistics getCollectorStat() {
-        return collectorStat;
+    public CollectorStatistics getCollectorStatistics() {
+        return collectorStatistics;
     }
 
     public void handleNotification(Notification notification) {
         long collectionTimeMillis = collectorMbean.getCollectionTime();
         long collectionCount = collectorMbean.getCollectionCount();
 
-        long collectionTimeDeltaMillis = collectionTimeMillis - snapshot.collectionTimeMillis;
-        long collectionCountDelta = collectionCount - snapshot.collectionTimeMillis;
+        long collectionTimeDeltaMillis = collectionTimeMillis - snapshot.getCollectionTimeMillis();
+        long collectionCountDelta = collectionCount - snapshot.getCollectionCount();
         if (collectionCountDelta == 0) {
             return;
         }

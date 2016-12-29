@@ -2,6 +2,7 @@ package com.github.gcmonitor.stat;
 
 import com.codahale.metrics.Histogram;
 import com.github.gcmonitor.GcMonitor;
+import com.github.gcmonitor.GcMonitorConfiguration;
 import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
 import com.github.rollingmetrics.counter.WindowCounter;
 import com.github.rollingmetrics.histogram.HdrBuilder;
@@ -14,17 +15,15 @@ public class CollectorStatisticsWindow {
     private final long windowDurationSeconds;
     private final WindowCounter counter;
     private final Histogram histogram;
-    private final double[] percentiles;
 
-    CollectorStatisticsWindow(long windowDurationSeconds, double[] percentiles) {
+    CollectorStatisticsWindow(long windowDurationSeconds, GcMonitorConfiguration configuration) {
         this.windowDurationSeconds = windowDurationSeconds;
-        this.percentiles = percentiles;
         Duration rollingWindow = Duration.ofSeconds(windowDurationSeconds);
-        this.counter = new SmoothlyDecayingRollingCounter(rollingWindow, GcMonitor.COUNTER_CHUNKS);
+        this.counter = new SmoothlyDecayingRollingCounter(rollingWindow, configuration.getCounterChunks());
         this.histogram = new HdrBuilder()
-                .resetReservoirPeriodicallyByChunks(rollingWindow, GcMonitor.HISTOGRAM_CHUNKS)
-                .withHighestTrackableValue(GcMonitor.LONGEST_TRACKABLE_PAUSE_MILLIS, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
-                .withPredefinedPercentiles(percentiles)
+                .resetReservoirPeriodicallyByChunks(rollingWindow, configuration.getHistogramChunks())
+                .withHighestTrackableValue(configuration.getLongestTrackablePauseMillis(), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .withPredefinedPercentiles(configuration.getPercentiles())
                 .buildHistogram();
     }
 
@@ -34,10 +33,6 @@ public class CollectorStatisticsWindow {
 
     public long getWindowDurationSeconds() {
         return windowDurationSeconds;
-    }
-
-    public double[] getPercentiles() {
-        return percentiles;
     }
 
     public WindowCounter getCounter() {

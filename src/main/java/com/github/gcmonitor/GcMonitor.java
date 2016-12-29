@@ -12,61 +12,59 @@ import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public class GcMonitor implements NotificationListener, AutoCloseable {
 
-    public static final String AGGREGATED_COLLECTOR_NAME = "Aggregated";
-    public static final int MAX_WINDOWS = 20;
-
-    public static final long[] DEFAULT_TIME_WINDOWS = {
-            TimeUnit.MINUTES.toSeconds(1),
-            TimeUnit.MINUTES.toSeconds(5),
-            TimeUnit.MINUTES.toSeconds(15),
-            TimeUnit.HOURS.toSeconds(1),
-            TimeUnit.HOURS.toSeconds(24),
-    };
-
-    public static final int COUNTER_CHUNKS = 10;
-    public static final int HISTOGRAM_CHUNKS = 5;
-    public static final long LONGEST_TRACKABLE_PAUSE_MILLIS = TimeUnit.MINUTES.toMillis(15);
-
-    public GcMonitor() {
-        this(DEFAULT_TIME_WINDOWS);
-    }
+    public static final String AGGREGATED_COLLECTOR_NAME = "Aggregated-Collector";
 
     private final Map<String, CollectorStatistics> statistics;
+    private final GcMonitorConfiguration configuration;
 
-    public GcMonitor(long[] timeWindows) {
-        this(timeWindows, ManagementFactory.getGarbageCollectorMXBeans());
+    public GcMonitor() {
+        this(GcMonitorConfiguration.DEFAULT);
     }
 
-    GcMonitor(long[] timeWindows, List<GarbageCollectorMXBean> garbageCollectorMXBeans) {
-        validateTimeWindows(timeWindows);
-        statistics = new HashMap<>();
-        CollectorStatistics globalStat = new CollectorStatistics(timeWindows);
-        statistics.put(AGGREGATED_COLLECTOR_NAME, globalStat);
+    public GcMonitor(GcMonitorConfiguration configuration) {
+        this(configuration, ManagementFactory.getGarbageCollectorMXBeans());
+    }
 
-        for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
+    GcMonitor(GcMonitorConfiguration configuration, List<GarbageCollectorMXBean> garbageCollectorMXBeans) {
+        if (garbageCollectorMXBeans.isEmpty()) {
+            throw new IllegalArgumentException("There are no one GarbageCollectorMXBean in the JVM");
+        }
+        this.configuration = configuration;
+
+        statistics = new HashMap<>();
+        Optional<CollectorStatistics> aggregatedStatistics;
+        if (garbageCollectorMXBeans.size() > 1) {
+            aggregatedStatistics = Optional.of(new CollectorStatistics(configuration));
+            statistics.put(AGGREGATED_COLLECTOR_NAME, aggregatedStatistics.get());
+        } else {
+            aggregatedStatistics = Optional.empty();
+        }
+
+        for (GarbageCollectorMXBean bean : garbageCollectorMXBeans) {
             NotificationEmitter emitter = (NotificationEmitter) bean;
-            MonitoredCollector handback = new MonitoredCollector(bean, globalStat, timeWindows);
-            statistics.put(bean.getName(), handback.getCollectorStat());
+            MonitoredCollector handback = new MonitoredCollector(bean, aggregatedStatistics, configuration);
+            statistics.put(bean.getName(), handback.getCollectorStatistics());
             emitter.addNotificationListener(this, null, handback);
         }
     }
 
-    private static void validateTimeWindows(long[] timeWindows) {
-        // TODO
-    }
-
-    public Map<String, CollectorStatistics> getStatistics() {
-        return statistics;
+    synchronized public void getStatistics(Consumer<Map<String, CollectorStatistics>> consumer) {
+        consumer.accept(statistics);
     }
 
     @Override
     synchronized public void handleNotification(Notification notification, Object handback) {
         MonitoredCollector handler = (MonitoredCollector) handback;
         handler.handleNotification(notification);
+    }
+
+    public GcMonitorConfiguration getConfiguration() {
+        return configuration;
     }
 
     @Override
