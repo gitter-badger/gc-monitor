@@ -10,6 +10,9 @@ public class UtilizationDataType extends CompositeType {
     public static final String TYPE_NAME = GcCollectorWindowDataType.TYPE_NAME + ".utilization";
     public static final String DESCRIPTION = "Shows information about collector utilization.";
 
+    public static final String DURATION_FIELD = "stwDurationMillis";
+    public static final String PERCENTAGE_FIELD = "stwPercentage";
+
     public static final UtilizationDataType INSTANCE; static {
         try {
             INSTANCE = new UtilizationDataType();
@@ -22,8 +25,8 @@ public class UtilizationDataType extends CompositeType {
         super(TYPE_NAME,
                 DESCRIPTION,
                 new String[] {
-                    "stwDurationMillis",
-                    "stwPercentage"
+                    DURATION_FIELD,
+                    PERCENTAGE_FIELD
                 },
                 new String[] {
                     "Time in milliseconds which JVM spent in STW GC pauses instead of doing real work",

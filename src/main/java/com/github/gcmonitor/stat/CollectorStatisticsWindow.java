@@ -1,7 +1,6 @@
 package com.github.gcmonitor.stat;
 
 import com.codahale.metrics.Histogram;
-import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.GcMonitorConfiguration;
 import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
 import com.github.rollingmetrics.counter.WindowCounter;

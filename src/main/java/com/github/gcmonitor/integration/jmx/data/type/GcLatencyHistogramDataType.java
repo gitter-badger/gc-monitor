@@ -1,6 +1,8 @@
 package com.github.gcmonitor.integration.jmx.data.type;
 
+import com.codahale.metrics.Snapshot;
 import com.github.gcmonitor.GcMonitorConfiguration;
+import com.github.gcmonitor.util.Formatter;
 
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenDataException;
@@ -10,6 +12,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class GcLatencyHistogramDataType extends CompositeType {
 
@@ -44,35 +48,40 @@ public class GcLatencyHistogramDataType extends CompositeType {
             SimpleType.BIGDECIMAL
     };
 
-    private final Map<Double, String> percentileToName;
-
-    public String getPercentileName(Double percentile) {
-        return percentileToName.get(percentile);
+    private static Map<String, BiFunction<Snapshot, Integer, Object>> predefinedExtractors = new HashMap<>(); static {
+        predefinedExtractors.put(MIN_NAME, (snapshot, decimalPoints) -> snapshot.getMin());
+        predefinedExtractors.put(MAX_NAME, (snapshot, decimalPoints) -> snapshot.getMax());
+        predefinedExtractors.put(MEAN_NAME, (snapshot, decimalPoints) -> Formatter.roundToDigits(snapshot.getMean(), decimalPoints));
+        predefinedExtractors.put(MEDIAN_NAME, (snapshot, decimalPoints) -> Formatter.roundToDigits(snapshot.getMedian(), decimalPoints));
+        predefinedExtractors.put(STD_DEVIATION_NAME, (snapshot, decimalPoints) -> Formatter.roundToDigits(snapshot.getStdDev(), decimalPoints));
     }
 
-    public Set<Double> getPercentiles() {
-        return percentileToName.keySet();
+    private final Map<String, BiFunction<Snapshot, Integer, Object>> extractors;
+
+    public Map<String, BiFunction<Snapshot, Integer, Object>> getExtractors() {
+        return extractors;
     }
 
     public static GcLatencyHistogramDataType buildCompositeType(GcMonitorConfiguration configuration) {
         double[] percentiles = configuration.getPercentiles();
         int percentileCount = percentiles.length;
         String[] itemNames = Arrays.copyOf(predefinedItemNames, predefinedItemNames.length + percentileCount);
-        String[] itemDescriptions = Arrays.copyOf(predefinedItemDescriptions, predefinedItemNames.length + percentileCount);;
-        OpenType<?>[] itemTypes = Arrays.copyOf(predefinedItemTypes, percentileCount);
-        Map<Double, String> percentileToName = new HashMap<>();
+        String[] itemDescriptions = Arrays.copyOf(predefinedItemDescriptions, predefinedItemNames.length + percentileCount);
+        OpenType<?>[] itemTypes = Arrays.copyOf(predefinedItemTypes, predefinedItemTypes.length + percentileCount);
 
+        Map<String, BiFunction<Snapshot, Integer, Object>> extractors = new HashMap<>(predefinedExtractors);
         for (int i = 0; i < percentileCount; i++) {
             double percentile = percentiles[i];
             String printablePercentileName = printablePercentile(percentile);
-            percentileToName.put(percentile, printablePercentileName);
+            extractors.put(printablePercentileName,
+                    (snapshot, decimalPoints) -> Formatter.roundToDigits(snapshot.getValue(percentile), decimalPoints));
             itemNames[predefinedItemNames.length + i] = printablePercentileName;
             itemDescriptions[predefinedItemDescriptions.length + i] = printablePercentileName;
             itemTypes[predefinedItemTypes.length + i] = SimpleType.BIGDECIMAL;
         }
 
         try {
-            return new GcLatencyHistogramDataType(itemNames, itemDescriptions, itemTypes, percentileToName);
+            return new GcLatencyHistogramDataType(itemNames, itemDescriptions, itemTypes, extractors);
         } catch (OpenDataException e) {
             throw new IllegalStateException(e);
         }
@@ -85,9 +94,10 @@ public class GcLatencyHistogramDataType extends CompositeType {
         return "" + percentile + "thPercentile";
     }
 
-    public GcLatencyHistogramDataType(String[] itemNames, String[] itemDescriptions, OpenType<?>[] itemTypes, Map<Double, String> percentileToName) throws OpenDataException {
+    public GcLatencyHistogramDataType(String[] itemNames, String[] itemDescriptions, OpenType<?>[] itemTypes,
+            Map<String, BiFunction<Snapshot, Integer, Object>> extractors) throws OpenDataException {
         super(TYPE_NAME, DESCRIPTION, itemNames, itemDescriptions, itemTypes);
-        this.percentileToName = percentileToName;
+        this.extractors = extractors;
     }
 
 }

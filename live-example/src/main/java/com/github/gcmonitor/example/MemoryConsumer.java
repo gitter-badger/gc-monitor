@@ -8,7 +8,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class MemoryConsumer implements AutoCloseable {
+public class MemoryConsumer implements AutoCloseable, MemoryConsumerMBean {
 
     private final ScheduledExecutorService scheduler;
     private ConcurrentHashMap<Long, byte[]> memory = new ConcurrentHashMap<>();
@@ -24,6 +24,7 @@ public class MemoryConsumer implements AutoCloseable {
         scheduler.shutdown();
     }
 
+    @Override
     public void consume(int megabytes, int seconds) {
         long key = sequence.incrementAndGet();
         byte[] bytes = new byte[1_000_000 * megabytes];

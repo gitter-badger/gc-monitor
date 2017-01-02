@@ -20,6 +20,7 @@ public class GcMonitorConfiguration {
     public static final int COUNTER_CHUNKS = 10;
     public static final int HISTOGRAM_CHUNKS = 5;
     public static final long LONGEST_TRACKABLE_PAUSE_MILLIS = TimeUnit.MINUTES.toMillis(15);
+    public static int DECIMAL_POINTS = 3;
 
     private final long[] timeWindows;
     private final double[] percentiles;
@@ -48,6 +49,10 @@ public class GcMonitorConfiguration {
 
     public long getLongestTrackablePauseMillis() {
         return LONGEST_TRACKABLE_PAUSE_MILLIS;
+    }
+
+    public int getDecimalPoints() {
+        return DECIMAL_POINTS = 2;
     }
 
     private static void validateTimeWindows(long[] timeWindows) {
