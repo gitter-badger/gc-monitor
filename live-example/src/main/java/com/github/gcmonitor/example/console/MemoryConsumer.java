@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by vladimir.bukhtoyarov on 11.01.2017.
@@ -13,7 +14,8 @@ import java.util.concurrent.TimeUnit;
 public class MemoryConsumer {
 
     private final ScheduledExecutorService scheduler;
-    private ConcurrentHashMap<byte[], byte[]> memory = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, byte[]> memory = new ConcurrentHashMap<>();
+    private final AtomicLong sequence = new AtomicLong();
 
     MemoryConsumer() {
         this.scheduler = Executors.newScheduledThreadPool(1);
@@ -23,12 +25,12 @@ public class MemoryConsumer {
         scheduler.shutdown();
     }
 
-    void consume(int megabytesInEden, int megabytesInTenured, int seconds) {
-        byte[] newBytes = new byte[1_000_000 * megabytesInEden];
-        byte[] oldBytes = new byte[1_000_000 * megabytesInTenured];
+    void consume(int megabytes, int seconds) {
+        byte[] oldBytes = new byte[1_000_000 * megabytes];
 
-        memory.put(newBytes, oldBytes);
-        scheduler.schedule(() -> memory.remove(newBytes), seconds, TimeUnit.SECONDS);
+        Long chunkId = sequence.incrementAndGet();
+        memory.put(chunkId, oldBytes);
+        scheduler.schedule(() -> memory.remove(chunkId), seconds, TimeUnit.SECONDS);
     }
 
     /*
@@ -40,13 +42,14 @@ public class MemoryConsumer {
     -XX:MaxNewSize=64m
     -XX:+UseCMSInitiatingOccupancyOnly
     -XX:CMSInitiatingOccupancyFraction=50
-    -XX:+CMSScavengeBeforeRemark
     -verbose:gc
     -XX:+PrintGC
     -XX:+PrintGCDetails
     -XX:+PrintGCTimeStamps
     -XX:+PrintGCDateStamps
     -XX:+PrintTenuringDistribution
+
+    then add -XX:+CMSScavengeBeforeRemark
      */
     public static void main(String[] args) throws InterruptedException {
         long startMillis = System.currentTimeMillis();
@@ -55,8 +58,8 @@ public class MemoryConsumer {
             while (true) {
                 long secondsSinceStart = (System.currentTimeMillis() - startMillis) / 1000;
                 System.out.println(secondsSinceStart + " seconds since start");
-                consumer.consume(1, 100, 1);
-                TimeUnit.SECONDS.sleep(10);
+                consumer.consume(100,  1);
+                TimeUnit.SECONDS.sleep(5);
             }
         } finally {
             consumer.shutdown();
