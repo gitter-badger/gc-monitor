@@ -4,7 +4,7 @@ import com.github.gcmonitor.GcMonitorConfiguration;
 
 import java.util.Arrays;
 
-public class CollectorStatistics {
+public class CollectorStatistics implements PrettyPrintable {
 
     private final CollectorStatisticsWindow[] windows;
 
@@ -26,6 +26,16 @@ public class CollectorStatistics {
         sb.append("windows=").append(Arrays.toString(windows));
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public void printItself(StringBuilder builder, String indent) {
+        builder.append(indent + "CollectorStatistics{");
+        for (CollectorStatisticsWindow window : windows) {
+            builder.append("\n");
+            window.printItself(builder, indent + "\t");
+        }
+        builder.append("\n" + indent + "}");
     }
 
 }

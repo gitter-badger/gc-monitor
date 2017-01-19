@@ -9,7 +9,7 @@ import com.github.rollingmetrics.histogram.OverflowResolver;
 
 import java.time.Duration;
 
-public class CollectorStatisticsWindow {
+public class CollectorStatisticsWindow implements PrettyPrintable {
 
     private final long windowDurationSeconds;
     private final WindowCounter counter;
@@ -48,4 +48,12 @@ public class CollectorStatisticsWindow {
         return sb.toString();
     }
 
+    @Override
+    public void printItself(StringBuilder sb, String indent) {
+        sb.append(indent + "CollectorStatisticsWindow{");
+        sb.append("\n" + indent + "\twindowDurationSeconds=").append(windowDurationSeconds);
+        sb.append("\n" + indent + "\tmillisSpentInGc=").append(counter.getSum());
+        sb.append("\n" + indent + "\thistogram=").append(histogram.getSnapshot().toString());
+        sb.append("\n" + indent + '}');
+    }
 }

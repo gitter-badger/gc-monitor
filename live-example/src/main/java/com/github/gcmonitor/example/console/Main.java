@@ -3,35 +3,41 @@ package com.github.gcmonitor.example.console;
 import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.example.MemoryConsumer;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryPoolMXBean;
-import java.lang.management.MemoryUsage;
-import java.util.List;
-import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-    public static void main(String[] args) {
+    /*
+    -Xmx1024m
+    -Xms1024m
+    -XX:+UseParNewGC
+    -XX:+UseConcMarkSweepGC
+    -XX:NewSize=64m
+    -XX:MaxNewSize=64m
+    -XX:+UseCMSInitiatingOccupancyOnly
+    -XX:CMSInitiatingOccupancyFraction=50
+    -verbose:gc
+    -XX:+PrintGC
+    -XX:+PrintGCDetails
+    -XX:+PrintGCTimeStamps
+    -XX:+PrintGCDateStamps
+    -XX:+PrintTenuringDistribution
+    -XX:+CMSScavengeBeforeRemark
+     */
+    public static void main(String[] args) throws InterruptedException {
         MemoryConsumer consumer = new MemoryConsumer();
         GcMonitor gcMonitor = new GcMonitor();
 
-        List<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getMemoryPoolMXBeans();
-
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            System.out.println("------------------------------------------------");
-            for (final MemoryPoolMXBean pool : memoryPoolMXBeans) {
-                MemoryUsage usage = pool.getUsage();
-                System.out.println(pool.getName() + ": " + usage);
+        try {
+            while (true) {
+                consumer.consume(ThreadLocalRandom.current().nextInt(10) + 1,  1);
+                consumer.consume(ThreadLocalRandom.current().nextInt(20) + 100,  1);
+                System.out.println(gcMonitor.getPrettyPrintableStatistics());
+                TimeUnit.SECONDS.sleep(5);
             }
-
-            System.out.println();
-            System.out.println("enter megabytes: ");
-            int megabytes = scanner.nextInt();
-
-            System.out.println("enter seconds: ");
-            int seconds = scanner.nextInt();
-            consumer.consume(megabytes, seconds);
+        } finally {
+            consumer.close();
         }
     }
 

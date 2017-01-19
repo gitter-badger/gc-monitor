@@ -2,6 +2,7 @@ package com.github.gcmonitor;
 
 import com.github.gcmonitor.stat.CollectorStatistics;
 import com.github.gcmonitor.stat.MonitoredCollector;
+import com.github.gcmonitor.stat.PrettyPrintable;
 
 import javax.management.ListenerNotFoundException;
 import javax.management.Notification;
@@ -48,6 +49,26 @@ public class GcMonitor implements NotificationListener, AutoCloseable {
             statistics.put(bean.getName(), handback.getCollectorStatistics());
             emitter.addNotificationListener(this, null, handback);
         }
+    }
+
+
+    synchronized public String getPrettyPrintableStatistics() {
+        final StringBuilder sb = new StringBuilder("GcMonitor{");
+        statistics.forEach((collectorName, stat) -> {
+            sb.append("\n\t").append(collectorName).append("=\n");
+            stat.printItself(sb, "\t\t");
+        });
+        sb.append("\n}");
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("GcMonitor{");
+        sb.append("statistics=").append(statistics);
+        sb.append(", configuration=").append(configuration);
+        sb.append('}');
+        return sb.toString();
     }
 
     synchronized public void getStatistics(Consumer<Map<String, CollectorStatistics>> consumer) {
