@@ -8,8 +8,7 @@ public class GcMonitorConfiguration {
 
     public static final long[] DEFAULT_TIME_WINDOWS = {
             TimeUnit.MINUTES.toSeconds(1),
-            TimeUnit.MINUTES.toSeconds(5),
-            TimeUnit.MINUTES.toSeconds(15),
+            TimeUnit.MINUTES.toSeconds(10),
             TimeUnit.HOURS.toSeconds(1),
             TimeUnit.HOURS.toSeconds(24),
     };
