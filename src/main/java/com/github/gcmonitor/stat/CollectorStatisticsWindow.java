@@ -8,6 +8,7 @@ import com.github.rollingmetrics.histogram.HdrBuilder;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class CollectorStatisticsWindow implements PrettyPrintable {
 

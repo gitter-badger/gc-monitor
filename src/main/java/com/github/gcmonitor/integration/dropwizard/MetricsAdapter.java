@@ -1,4 +1,4 @@
-package com.github.gcmonitor.integration.metrics;
+package com.github.gcmonitor.integration.dropwizard;
 
 import com.codahale.metrics.MetricSet;
 import com.github.gcmonitor.GcMonitor;
