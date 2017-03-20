@@ -27,7 +27,7 @@ public final class MonitoredCollector {
     private final CollectorStatistics[] allStats;
     private final CollectorSnapshot snapshot;
 
-    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, Optional<CollectorStatistics> aggregatedStatistics, CollectorStatistics thisCollectorStatistics) {
+    MonitoredCollector(GarbageCollectorMXBean collectorMbean, Optional<CollectorStatistics> aggregatedStatistics, CollectorStatistics thisCollectorStatistics) {
         this.collectorMbean = collectorMbean;
         this.collectorStatistics = thisCollectorStatistics;
 

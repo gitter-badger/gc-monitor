@@ -16,43 +16,50 @@
 
 package com.github.gcmonitor.stat;
 
-import com.sun.java.swing.plaf.windows.resources.windows;
-
 import javax.management.Notification;
-import javax.management.NotificationEmitter;
 import java.lang.management.GarbageCollectorMXBean;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class GcStatistics implements PrettyPrintable {
 
-    private final Map<String, MonitoredCollector> monitoredCollectors;
-    private final Map<String, CollectorStatistics> perCollectorStatistics;
+    private final SortedMap<String, MonitoredCollector> monitoredCollectors;
+    private final SortedMap<String, CollectorStatistics> perCollectorStatistics;
 
     public static GcStatistics create(GcMonitorConfiguration configuration) {
+        SortedMap<String, MonitoredCollector> monitoredCollectors = new TreeMap<>();
+        SortedMap<String, CollectorStatistics> perCollectorStatistics = new TreeMap<>();
         List<GarbageCollectorMXBean> garbageCollectorMXBeans = configuration.getGarbageCollectorMXBeans();
-
-        long[] timeWindows = configuration.getTimeWindowSpecifications();
-        this.windows = new CollectorWindow[timeWindows.length];
-        for (int i = 0; i < windows.length; i++) {
-            windows[i] = new CollectorWindow(timeWindows[i], configuration);
-        }
+        long currentTimeMillis = configuration.getClock().currentTimeMillis();
 
         Optional<CollectorStatistics> aggregatedStatistics;
-        if (garbageCollectorMXBeans.size() > 1) {
-            aggregatedStatistics = Optional.of(new CollectorStatistics(configuration));
+        if (garbageCollectorMXBeans.size() > 1 && configuration.isAggregateStatFromDifferentCollectors()) {
+            aggregatedStatistics = Optional.of(createCollectorStatistics(configuration, currentTimeMillis));
             perCollectorStatistics.put(GcMonitorConfiguration.AGGREGATED_COLLECTOR_NAME, aggregatedStatistics.get());
         } else {
             aggregatedStatistics = Optional.empty();
         }
 
         for (GarbageCollectorMXBean bean : configuration.getGarbageCollectorMXBeans()) {
-            NotificationEmitter emitter = (NotificationEmitter) bean;
-            MonitoredCollector handback = new MonitoredCollector(bean, aggregatedStatistics, configuration);
-            perCollectorStatistics.put(bean.getName(), handback.getCollectorStatistics());
-            emitter.addNotificationListener(this, null, handback);
+            CollectorStatistics collectorStatistics = createCollectorStatistics(configuration, currentTimeMillis);
+            perCollectorStatistics.put(bean.getName(), collectorStatistics);
+            MonitoredCollector monitoredCollector = new MonitoredCollector(bean, aggregatedStatistics, collectorStatistics);
+            monitoredCollectors.put(bean.getName(), monitoredCollector);
         }
+        return new GcStatistics(monitoredCollectors, perCollectorStatistics);
+    }
+
+    private static CollectorStatistics createCollectorStatistics(GcMonitorConfiguration configuration, long currentTimeMillis) {
+        SortedMap<String, CollectorWindow> windows = new TreeMap<>();
+        configuration.getWindowSpecifications().forEach((windowName, windowSpec) -> {
+            CollectorWindow window = windowSpec.createWindow(currentTimeMillis, configuration);
+            windows.put(windowName, window);
+        });
+        return new CollectorStatistics(windows);
+    }
+
+    private GcStatistics(SortedMap<String, MonitoredCollector> monitoredCollectors, SortedMap<String, CollectorStatistics> perCollectorStatistics) {
+        this.monitoredCollectors = monitoredCollectors;
+        this.perCollectorStatistics = perCollectorStatistics;
     }
 
     public void handleNotification(String collectorName, Notification notification) {

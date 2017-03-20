@@ -20,11 +20,13 @@ import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.integration.jmx.data.GcMonitorData;
 import com.github.gcmonitor.integration.jmx.data.type.GcMonitorDataType;
 
+import javax.management.openmbean.CompositeType;
+
 
 public class GcMonitorStatistics implements GcMonitorStatisticsMXBean {
 
     private final GcMonitor gcMonitor;
-    private final GcMonitorDataType type;
+    private final CompositeType type;
 
     public GcMonitorStatistics(GcMonitor gcMonitor) {
         this.gcMonitor = gcMonitor;

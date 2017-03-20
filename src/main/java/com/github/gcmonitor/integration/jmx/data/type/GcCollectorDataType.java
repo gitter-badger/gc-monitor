@@ -33,7 +33,7 @@ public class GcCollectorDataType extends CompositeType {
     private final GcCollectorWindowDataType windowType;
 
     public static GcCollectorDataType buildCompositeType(GcMonitorConfiguration configuration) {
-        long[] timeWindows = configuration.getTimeWindowSpecifications();
+        long[] timeWindows = configuration.getWindowSpecifications();
 
         Map<Long, String> namesByDuration = new HashMap<>();
         String[] itemNames = new String[timeWindows.length];

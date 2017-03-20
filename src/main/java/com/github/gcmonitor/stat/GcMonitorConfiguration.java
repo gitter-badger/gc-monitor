@@ -33,14 +33,16 @@ public class GcMonitorConfiguration {
     public static int DECIMAL_POINTS = 3;
 
     private final List<GarbageCollectorMXBean> garbageCollectorMXBeans;
-    private final SortedMap<String, WindowSpecification> timeWindowSpecifications;
+    private final SortedMap<String, WindowSpecification> windowSpecifications;
     private final double[] percentiles;
+    private final boolean aggregateStatFromDifferentCollectors;
     private final Clock clock;
 
-    public GcMonitorConfiguration(Map<String, WindowSpecification> timeWindowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, Clock clock) {
-        this.timeWindowSpecifications = new TreeMap<>();
+    public GcMonitorConfiguration(SortedMap<String, WindowSpecification> windowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, boolean aggregateStatFromDifferentCollectors, Clock clock) {
+        this.windowSpecifications = windowSpecifications;
         this.garbageCollectorMXBeans = garbageCollectorMXBeans;
         this.percentiles = percentiles.clone();
+        this.aggregateStatFromDifferentCollectors = aggregateStatFromDifferentCollectors;
         this.clock = clock;
     }
 
@@ -48,8 +50,8 @@ public class GcMonitorConfiguration {
         return garbageCollectorMXBeans;
     }
 
-    public SortedMap<String, WindowSpecification> getTimeWindowSpecifications() {
-        return timeWindowSpecifications;
+    public SortedMap<String, WindowSpecification> getWindowSpecifications() {
+        return windowSpecifications;
     }
 
     public Clock getClock() {
@@ -76,4 +78,7 @@ public class GcMonitorConfiguration {
         return DECIMAL_POINTS = 2;
     }
 
+    public boolean isAggregateStatFromDifferentCollectors() {
+        return aggregateStatFromDifferentCollectors;
+    }
 }
