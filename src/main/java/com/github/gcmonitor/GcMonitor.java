@@ -16,6 +16,7 @@
 
 package com.github.gcmonitor;
 
+import com.codahale.metrics.Histogram;
 import com.github.gcmonitor.stat.*;
 
 import javax.management.ListenerNotFoundException;
@@ -23,13 +24,15 @@ import javax.management.Notification;
 import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import java.lang.management.GarbageCollectorMXBean;
-import java.util.function.Consumer;
 
 public class GcMonitor implements NotificationListener {
 
     private final GcMonitorConfiguration configuration;
 
-    private GcStatistics statistics;
+    private final GcStatistics statistics;
+
+    private boolean started = false;
+    private boolean stopped = false;
 
     public static GcMonitorBuilder builder() {
         return new GcMonitorBuilder();
@@ -37,13 +40,19 @@ public class GcMonitor implements NotificationListener {
 
     GcMonitor(GcMonitorConfiguration configuration) {
         this.configuration = configuration;
+        this.statistics = GcStatistics.create(configuration);
     }
 
     synchronized public GcMonitorSnapshot getSnapshot() {
-        if (statistics == null) {
-            return GcStatistics.createEmptySnapshot(configuration);
-        }
         return statistics.getSnapshot();
+    }
+
+    synchronized public CollectorWindowSnapshot getCollectorWindowSnapshot(String collectorName, String windowName) {
+        return statistics.getCollectorWindowSnapshot(collectorName, windowName);
+    }
+
+    public Histogram getCollectorLatencyHistogram(String collectorName, String windowName) {
+        return new ReadOnlyHistogram(collectorName, windowName);
     }
 
     @Override
@@ -61,8 +70,6 @@ public class GcMonitor implements NotificationListener {
             // already started
             return;
         }
-
-        this.statistics = GcStatistics.create(configuration);
 
         for (GarbageCollectorMXBean bean : configuration.getGarbageCollectorMXBeans()) {
             NotificationEmitter emitter = (NotificationEmitter) bean;
@@ -91,17 +98,6 @@ public class GcMonitor implements NotificationListener {
         sb.append("configuration=").append(configuration);
         sb.append(", snapshot=").append(getSnapshot());
         sb.append('}');
-        return sb.toString();
-    }
-
-    synchronized public String getPrettyPrintableStatistics() {
-        final StringBuilder sb = new StringBuilder("GcMonitor{");
-        if (statistics != null) {
-            statistics.printItself(sb, "\t\t");
-        } else {
-            sb.append("GC event listening is not started.");
-        }
-        sb.append("\n}");
         return sb.toString();
     }
 

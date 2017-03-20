@@ -93,12 +93,28 @@ public class GcStatistics {
             Map<String, CollectorWindowSnapshot> collectorMap = new HashMap<>();
             perCollectorSnapshots.put(collectorName, collectorMap);
             for (String windowName : configuration.getWindowNames()) {
-                CollectorWindowSnapshot fakeSnapshot = new CollectorWindowSnapshot(EmptySnapshot.INSTANCE, 0L, 0.0d);
-                collectorMap.put(windowName, fakeSnapshot);
+                collectorMap.put(windowName, createEmptyCollectorWindowSnapshot());
             }
         }
 
         return new GcMonitorSnapshot(perCollectorSnapshots);
+    }
+
+    public static CollectorWindowSnapshot createEmptyCollectorWindowSnapshot() {
+        return new CollectorWindowSnapshot(EmptySnapshot.INSTANCE, 0L, 0.0d);
+    }
+
+    public CollectorWindowSnapshot getCollectorWindowSnapshot(String collectorName, String windowName) {
+        CollectorStatistics collectorWindows = perCollectorStatistics.get(collectorName);
+        if (collectorWindows == null) {
+            throw new IllegalArgumentException("Unknown collector name [" + collectorName + "]");
+        }
+
+        CollectorWindow window = collectorWindows.getWindows().get(windowName);
+        if (window == null) {
+            throw new IllegalArgumentException("Unknown name of collector window [" + windowName + "]");
+        }
+        return window.getSnapshot(configuration.getClock().currentTimeMillis());
     }
 
 }
