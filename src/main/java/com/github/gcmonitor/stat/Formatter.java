@@ -14,10 +14,15 @@
  *    limitations under the License.
  */
 
-package com.github.gcmonitor.example;
+package com.github.gcmonitor.stat;
 
-public interface MemoryConsumerMBean {
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
-    void consume(int megabytes, int seconds);
+public class Formatter {
+
+    public static BigDecimal roundToDigits(double value, int digits) {
+        return new BigDecimal(value).setScale(digits, RoundingMode.CEILING);
+    }
 
 }

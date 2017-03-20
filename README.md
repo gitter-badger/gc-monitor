@@ -2,4 +2,4 @@
 Set of advanced monitoring metrics for OpenJDK Garbage collector.
 
 # Project state
-The library is under development. First release is proposed to March 2017.
+The library is under development. First release is proposed to April 2017.

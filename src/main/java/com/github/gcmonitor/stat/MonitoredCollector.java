@@ -1,6 +1,20 @@
-package com.github.gcmonitor.stat;
+/*
+ *  Copyright 2017 Vladimir Bukhtoyarov
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *           http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 
-import com.github.gcmonitor.GcMonitorConfiguration;
+package com.github.gcmonitor.stat;
 
 import javax.management.Notification;
 import java.lang.management.GarbageCollectorMXBean;
@@ -13,9 +27,10 @@ public final class MonitoredCollector {
     private final CollectorStatistics[] allStats;
     private final CollectorSnapshot snapshot;
 
-    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, Optional<CollectorStatistics> aggregatedStatistics, GcMonitorConfiguration configuration) {
+    public MonitoredCollector(GarbageCollectorMXBean collectorMbean, Optional<CollectorStatistics> aggregatedStatistics, CollectorStatistics thisCollectorStatistics) {
         this.collectorMbean = collectorMbean;
-        this.collectorStatistics = new CollectorStatistics(configuration);
+        this.collectorStatistics = thisCollectorStatistics;
+
         if (aggregatedStatistics.isPresent()) {
             this.allStats = new CollectorStatistics[] {aggregatedStatistics.get(), collectorStatistics};
         } else {
@@ -37,14 +52,9 @@ public final class MonitoredCollector {
         if (collectionCountDelta == 0) {
             return;
         }
-        long averageTimeMillis = collectionTimeDeltaMillis / collectionCountDelta;
-
         for (CollectorStatistics stat : allStats) {
-            for (CollectorStatisticsWindow window : stat.getWindows()) {
-                window.getCounter().add(collectionTimeDeltaMillis);
-                for (int i = 0; i < collectionCountDelta; i++) {
-                    window.getHistogram().update(averageTimeMillis);
-                }
+            for (CollectorWindow window : stat.getWindows()) {
+                window.update(collectionTimeDeltaMillis, collectionCountDelta);
             }
         }
         snapshot.update(collectionTimeMillis, collectionCount);

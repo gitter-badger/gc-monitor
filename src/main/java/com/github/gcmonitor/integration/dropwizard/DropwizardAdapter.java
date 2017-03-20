@@ -14,10 +14,17 @@
  *    limitations under the License.
  */
 
-package com.github.gcmonitor.example;
+package com.github.gcmonitor.integration.dropwizard;
 
-public interface MemoryConsumerMBean {
+import com.codahale.metrics.MetricSet;
+import com.github.gcmonitor.GcMonitor;
 
-    void consume(int megabytes, int seconds);
+
+public class DropwizardAdapter {
+
+    public static MetricSet toMetricSet(String namePreffix, GcMonitor monitor) {
+        // TODO
+        return null;
+    }
 
 }

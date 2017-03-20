@@ -14,10 +14,24 @@
  *    limitations under the License.
  */
 
-package com.github.gcmonitor.example;
+package com.github.gcmonitor.stat;
 
-public interface MemoryConsumerMBean {
+import com.github.rollingmetrics.counter.WindowCounter;
 
-    void consume(int megabytes, int seconds);
+import java.util.concurrent.atomic.AtomicLong;
+
+public class UniformWindowCounter implements WindowCounter {
+
+    private final AtomicLong sum = new AtomicLong();
+
+    @Override
+    public void add(long delta) {
+        sum.addAndGet(delta);
+    }
+
+    @Override
+    public long getSum() {
+        return sum.get();
+    }
 
 }
