@@ -16,7 +16,7 @@
 
 package com.github.gcmonitor.stat;
 
-import com.github.rollingmetrics.histogram.util.EmptySnapshot;
+import com.codahale.metrics.Histogram;
 
 import javax.management.Notification;
 import java.lang.management.GarbageCollectorMXBean;
@@ -87,24 +87,27 @@ public class GcStatistics {
         return new GcMonitorSnapshot(perCollectorSnapshots);
     }
 
-    public static GcMonitorSnapshot createEmptySnapshot(GcMonitorConfiguration configuration) {
-        Map<String, Map<String, CollectorWindowSnapshot>> perCollectorSnapshots = new HashMap<>();
-        for (String collectorName : configuration.getCollectorNames()) {
-            Map<String, CollectorWindowSnapshot> collectorMap = new HashMap<>();
-            perCollectorSnapshots.put(collectorName, collectorMap);
-            for (String windowName : configuration.getWindowNames()) {
-                collectorMap.put(windowName, createEmptyCollectorWindowSnapshot());
-            }
-        }
-
-        return new GcMonitorSnapshot(perCollectorSnapshots);
-    }
-
-    public static CollectorWindowSnapshot createEmptyCollectorWindowSnapshot() {
-        return new CollectorWindowSnapshot(EmptySnapshot.INSTANCE, 0L, 0.0d);
-    }
-
     public CollectorWindowSnapshot getCollectorWindowSnapshot(String collectorName, String windowName) {
+        CollectorWindow window = getCollectorWindow(collectorName, windowName);
+        return window.getSnapshot(configuration.getClock().currentTimeMillis());
+    }
+
+    public Histogram getCollectorLatencyHistogram(String collectorName, String windowName) {
+        CollectorWindow window = getCollectorWindow(collectorName, windowName);
+        return window.getReadOnlyPauseLatencyHistogram();
+    }
+
+    public long getMillisSpentInGc(String collectorName, String windowName) {
+        CollectorWindow window = getCollectorWindow(collectorName, windowName);
+        return window.getMillisSpentInGc(configuration.getClock().currentTimeMillis());
+    }
+
+    public double getPausePercentage(String collectorName, String windowName) {
+        CollectorWindow window = getCollectorWindow(collectorName, windowName);
+        return window.getPausePercentage(configuration.getClock().currentTimeMillis());
+    }
+
+    private CollectorWindow getCollectorWindow(String collectorName, String windowName) {
         CollectorStatistics collectorWindows = perCollectorStatistics.get(collectorName);
         if (collectorWindows == null) {
             throw new IllegalArgumentException("Unknown collector name [" + collectorName + "]");
@@ -114,7 +117,7 @@ public class GcStatistics {
         if (window == null) {
             throw new IllegalArgumentException("Unknown name of collector window [" + windowName + "]");
         }
-        return window.getSnapshot(configuration.getClock().currentTimeMillis());
+        return window;
     }
 
 }

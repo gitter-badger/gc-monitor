@@ -17,6 +17,7 @@
 package com.github.gcmonitor.stat;
 
 import com.codahale.metrics.Histogram;
+import com.github.gcmonitor.ReadOnlyHistogram;
 import com.github.rollingmetrics.counter.WindowCounter;
 
 import java.time.Duration;
@@ -28,15 +29,17 @@ public class CollectorWindow {
     private final Optional<Duration> windowDuration;
     private final WindowCounter stwMillisCounter;
     private final Histogram pauseLatencyHistogram;
+    private final Histogram readOnlyPauseLatencyHistogram;
 
-    public CollectorWindow(long creationTimeMillis, Optional<Duration> windowDuration, WindowCounter stwMillisCounter, Histogram pauseLatencyHistogram) {
+    CollectorWindow(long creationTimeMillis, Optional<Duration> windowDuration, WindowCounter stwMillisCounter, Histogram pauseLatencyHistogram) {
         this.creationTimeMillis = creationTimeMillis;
         this.windowDuration = windowDuration;
         this.stwMillisCounter = stwMillisCounter;
         this.pauseLatencyHistogram = pauseLatencyHistogram;
+        this.readOnlyPauseLatencyHistogram = new ReadOnlyHistogram(pauseLatencyHistogram);
     }
 
-    public void update(long collectionTimeDeltaMillis, long collectionCountDelta) {
+    void update(long collectionTimeDeltaMillis, long collectionCountDelta) {
         stwMillisCounter.add(collectionTimeDeltaMillis);
         long averageTimeMillis = collectionTimeDeltaMillis / collectionCountDelta;
         for (int i = 0; i < collectionCountDelta; i++) {
@@ -44,9 +47,21 @@ public class CollectorWindow {
         }
     }
 
-    public CollectorWindowSnapshot getSnapshot(long currentTimeMillis) {
-        long millisSpentInGc = stwMillisCounter.getSum();
+    CollectorWindowSnapshot getSnapshot(long currentTimeMillis) {
+        long millisSpentInGc = getMillisSpentInGc(currentTimeMillis);
+        double percentage = getPausePercentage(currentTimeMillis);
+        return new CollectorWindowSnapshot(pauseLatencyHistogram.getSnapshot(), millisSpentInGc, percentage);
+    }
 
+    Histogram getReadOnlyPauseLatencyHistogram() {
+        return readOnlyPauseLatencyHistogram;
+    }
+
+    long getMillisSpentInGc(long currentTimeMillis) {
+        return stwMillisCounter.getSum();
+    }
+
+    double getPausePercentage(long currentTimeMillis) {
         long millisSinceCreation = currentTimeMillis - creationTimeMillis;
         long normalizationWindow;
         if (!windowDuration.isPresent()) {
@@ -59,9 +74,8 @@ public class CollectorWindow {
                 normalizationWindow = rollingTimeWindowMillis;
             }
         }
-
-        double percentage = (double) millisSpentInGc * 100 / normalizationWindow;
-        return new CollectorWindowSnapshot(pauseLatencyHistogram.getSnapshot(), millisSpentInGc, percentage);
+        long millisSpentInGc = getMillisSpentInGc(currentTimeMillis);
+        return (double) millisSpentInGc * 100 / normalizationWindow;
     }
 
 }

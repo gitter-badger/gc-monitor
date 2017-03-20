@@ -51,8 +51,16 @@ public class GcMonitor implements NotificationListener {
         return statistics.getCollectorWindowSnapshot(collectorName, windowName);
     }
 
-    public Histogram getCollectorLatencyHistogram(String collectorName, String windowName) {
-        return new ReadOnlyHistogram(collectorName, windowName);
+    synchronized public long getMillisSpentInGc(String collectorName, String windowName) {
+        return statistics.getMillisSpentInGc(collectorName, windowName);
+    }
+
+    synchronized public double getPausePercentage(String collectorName, String windowName) {
+        return statistics.getPausePercentage(collectorName, windowName);
+    }
+
+    public Histogram getPauseLatencyHistogram(String collectorName, String windowName) {
+        return statistics.getCollectorLatencyHistogram(collectorName, windowName);
     }
 
     @Override
@@ -66,10 +74,11 @@ public class GcMonitor implements NotificationListener {
     }
 
     public synchronized void start() {
-        if (statistics != null) {
+        if (started) {
             // already started
             return;
         }
+        started = true;
 
         for (GarbageCollectorMXBean bean : configuration.getGarbageCollectorMXBeans()) {
             NotificationEmitter emitter = (NotificationEmitter) bean;
@@ -78,11 +87,11 @@ public class GcMonitor implements NotificationListener {
     }
 
     public synchronized void stop() {
-        if (statistics == null) {
+        if (stopped || !started) {
             return;
         }
+        stopped = true;
 
-        statistics = null;
         for (GarbageCollectorMXBean bean : configuration.getGarbageCollectorMXBeans()) {
             try {
                 ((NotificationEmitter) bean).removeNotificationListener(this);

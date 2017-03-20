@@ -39,10 +39,6 @@ public final class MonitoredCollector {
         this.snapshot = new CollectorSnapshot(collectorMbean);
     }
 
-    public CollectorStatistics getCollectorStatistics() {
-        return collectorStatistics;
-    }
-
     public void handleNotification(Notification notification) {
         long collectionTimeMillis = collectorMbean.getCollectionTime();
         long collectionCount = collectorMbean.getCollectionCount();
@@ -53,9 +49,7 @@ public final class MonitoredCollector {
             return;
         }
         for (CollectorStatistics stat : allStats) {
-            for (CollectorWindow window : stat.getWindows()) {
-                window.update(collectionTimeDeltaMillis, collectionCountDelta);
-            }
+            stat.update(collectionTimeDeltaMillis, collectionCountDelta);
         }
         snapshot.update(collectionTimeMillis, collectionCount);
     }

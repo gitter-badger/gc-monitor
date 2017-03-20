@@ -26,8 +26,14 @@ public class CollectorStatistics {
         this.windows = windows;
     }
 
-    public SortedMap<String, CollectorWindow> getWindows() {
+    SortedMap<String, CollectorWindow> getWindows() {
         return windows;
+    }
+
+    void update(long collectionTimeDeltaMillis, long collectionCountDelta) {
+        for (CollectorWindow window : windows.values()) {
+            window.update(collectionTimeDeltaMillis, collectionCountDelta);
+        }
     }
 
 }
