@@ -18,7 +18,7 @@ package com.github.gcmonitor.stat;
 
 import java.util.SortedMap;
 
-public class CollectorStatistics implements PrettyPrintable {
+public class CollectorStatistics {
 
     private final SortedMap<String, CollectorWindow> windows;
 
@@ -28,25 +28,6 @@ public class CollectorStatistics implements PrettyPrintable {
 
     public SortedMap<String, CollectorWindow> getWindows() {
         return windows;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("CollectorStatistics{");
-        sb.append("windows=").append(windows);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    @Override
-    public void printItself(StringBuilder builder, String indent) {
-        builder.append(indent + "CollectorStatistics{");
-        windows.forEach((windowName, window) -> {
-            builder.append("\n");
-            builder.append(windowName).append(":");
-            window.printItself(builder, indent + "\t");
-        });
-        builder.append("\n" + indent + "}");
     }
 
 }

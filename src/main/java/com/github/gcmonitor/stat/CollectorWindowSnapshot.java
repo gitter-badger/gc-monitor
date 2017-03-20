@@ -16,8 +16,21 @@
 
 package com.github.gcmonitor.stat;
 
-public interface PrettyPrintable {
+import com.codahale.metrics.Snapshot;
 
-    void printItself(StringBuilder builder, String indent);
+/**
+ * Created by vladimir.bukhtoyarov on 20.03.2017.
+ */
+public class CollectorWindowSnapshot {
+
+    private final Snapshot snapshot;
+    private final long millisSpentInGc;
+    private final double percentageSpentInGc;
+
+    public CollectorWindowSnapshot(Snapshot snapshot, long millisSpentInGc, double percentageSpentInGc) {
+        this.snapshot = snapshot;
+        this.millisSpentInGc = millisSpentInGc;
+        this.percentageSpentInGc = percentageSpentInGc;
+    }
 
 }

@@ -39,8 +39,11 @@ public class GcMonitor implements NotificationListener {
         this.configuration = configuration;
     }
 
-    synchronized public void getStatistics(Consumer<GcStatistics> consumer) {
-        consumer.accept(statistics);
+    synchronized public GcMonitorSnapshot getSnapshot() {
+        if (statistics == null) {
+            return GcStatistics.createEmptySnapshot(configuration);
+        }
+        return statistics.getSnapshot();
     }
 
     @Override
@@ -82,6 +85,15 @@ public class GcMonitor implements NotificationListener {
         }
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("GcMonitor{");
+        sb.append("configuration=").append(configuration);
+        sb.append(", snapshot=").append(getSnapshot());
+        sb.append('}');
+        return sb.toString();
+    }
+
     synchronized public String getPrettyPrintableStatistics() {
         final StringBuilder sb = new StringBuilder("GcMonitor{");
         if (statistics != null) {
@@ -90,15 +102,6 @@ public class GcMonitor implements NotificationListener {
             sb.append("GC event listening is not started.");
         }
         sb.append("\n}");
-        return sb.toString();
-    }
-
-    @Override
-    public synchronized String toString() {
-        final StringBuilder sb = new StringBuilder("GcMonitor{");
-        sb.append("statistics=").append(getPrettyPrintableStatistics());
-        sb.append(", configuration=").append(configuration);
-        sb.append('}');
         return sb.toString();
     }
 

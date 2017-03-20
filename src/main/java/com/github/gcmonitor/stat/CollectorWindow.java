@@ -22,42 +22,46 @@ import com.github.rollingmetrics.counter.WindowCounter;
 import java.time.Duration;
 import java.util.Optional;
 
-public class CollectorWindow implements PrettyPrintable {
+public class CollectorWindow {
 
     private final long creationTimeMillis;
     private final Optional<Duration> windowDuration;
-    private final WindowCounter counter;
-    private final Histogram histogram;
+    private final WindowCounter stwMillisCounter;
+    private final Histogram pauseLatencyHistogram;
 
-    public CollectorWindow(long creationTimeMillis, Optional<Duration> windowDuration, WindowCounter counter, Histogram histogram) {
+    public CollectorWindow(long creationTimeMillis, Optional<Duration> windowDuration, WindowCounter stwMillisCounter, Histogram pauseLatencyHistogram) {
         this.creationTimeMillis = creationTimeMillis;
         this.windowDuration = windowDuration;
-        this.counter = counter;
-        this.histogram = histogram;
+        this.stwMillisCounter = stwMillisCounter;
+        this.pauseLatencyHistogram = pauseLatencyHistogram;
     }
 
     public void update(long collectionTimeDeltaMillis, long collectionCountDelta) {
-        counter.add(collectionTimeDeltaMillis);
+        stwMillisCounter.add(collectionTimeDeltaMillis);
         long averageTimeMillis = collectionTimeDeltaMillis / collectionCountDelta;
         for (int i = 0; i < collectionCountDelta; i++) {
-            histogram.update(averageTimeMillis);
+            pauseLatencyHistogram.update(averageTimeMillis);
         }
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        printItself(sb, "");
-        return sb.toString();
-    }
+    public CollectorWindowSnapshot getSnapshot(long currentTimeMillis) {
+        long millisSpentInGc = stwMillisCounter.getSum();
 
-    @Override
-    public void printItself(StringBuilder sb, String indent) {
-        sb.append(indent + "CollectorWindow{");
-        sb.append("\n" + indent + "\twindowDurationSeconds=").append(windowDuration.map(duration -> "" + duration.getSeconds()).orElse("uniform"));
-        sb.append("\n" + indent + "\tmillisSpentInGc=").append(counter.getSum());
-        sb.append("\n" + indent + "\thistogram=").append(histogram.getSnapshot().toString());
-        sb.append("\n" + indent + '}');
+        long millisSinceCreation = currentTimeMillis - creationTimeMillis;
+        long normalizationWindow;
+        if (!windowDuration.isPresent()) {
+            normalizationWindow = millisSinceCreation;
+        } else {
+            long rollingTimeWindowMillis = windowDuration.get().toMillis();
+            if (millisSinceCreation < rollingTimeWindowMillis) {
+                normalizationWindow = millisSinceCreation;
+            } else {
+                normalizationWindow = rollingTimeWindowMillis;
+            }
+        }
+
+        double percentage = (double) millisSpentInGc * 100 / normalizationWindow;
+        return new CollectorWindowSnapshot(pauseLatencyHistogram.getSnapshot(), millisSpentInGc, percentage);
     }
 
 }

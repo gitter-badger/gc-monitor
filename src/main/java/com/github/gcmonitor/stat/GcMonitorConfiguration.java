@@ -33,16 +33,19 @@ public class GcMonitorConfiguration {
     public static int DECIMAL_POINTS = 3;
 
     private final List<GarbageCollectorMXBean> garbageCollectorMXBeans;
+    private final SortedSet<String> collectorNames;
     private final SortedMap<String, WindowSpecification> windowSpecifications;
     private final double[] percentiles;
-    private final boolean aggregateStatFromDifferentCollectors;
+    private final boolean aggregateDifferentCollectors;
     private final Clock clock;
 
-    public GcMonitorConfiguration(SortedMap<String, WindowSpecification> windowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, boolean aggregateStatFromDifferentCollectors, Clock clock) {
-        this.windowSpecifications = windowSpecifications;
-        this.garbageCollectorMXBeans = garbageCollectorMXBeans;
+    public GcMonitorConfiguration(SortedMap<String, WindowSpecification> windowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, boolean aggregateDifferentCollectors, Clock clock) {
+        this.windowSpecifications = Collections.unmodifiableSortedMap(windowSpecifications);
+        this.garbageCollectorMXBeans = Collections.unmodifiableList(garbageCollectorMXBeans);
+        this.collectorNames = new TreeSet<>();
+        garbageCollectorMXBeans.forEach(bean -> collectorNames.add(bean.getName()));
         this.percentiles = percentiles.clone();
-        this.aggregateStatFromDifferentCollectors = aggregateStatFromDifferentCollectors;
+        this.aggregateDifferentCollectors = aggregateDifferentCollectors;
         this.clock = clock;
     }
 
@@ -52,6 +55,14 @@ public class GcMonitorConfiguration {
 
     public SortedMap<String, WindowSpecification> getWindowSpecifications() {
         return windowSpecifications;
+    }
+
+    public Set<String> getWindowNames() {
+        return windowSpecifications.keySet();
+    }
+
+    public SortedSet<String> getCollectorNames() {
+        return collectorNames;
     }
 
     public Clock getClock() {
@@ -78,7 +89,7 @@ public class GcMonitorConfiguration {
         return DECIMAL_POINTS = 2;
     }
 
-    public boolean isAggregateStatFromDifferentCollectors() {
-        return aggregateStatFromDifferentCollectors;
+    public boolean isAggregateDifferentCollectors() {
+        return aggregateDifferentCollectors;
     }
 }

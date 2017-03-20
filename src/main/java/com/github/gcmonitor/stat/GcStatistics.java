@@ -16,12 +16,15 @@
 
 package com.github.gcmonitor.stat;
 
+import com.github.rollingmetrics.histogram.util.EmptySnapshot;
+
 import javax.management.Notification;
 import java.lang.management.GarbageCollectorMXBean;
 import java.util.*;
 
-public class GcStatistics implements PrettyPrintable {
+public class GcStatistics {
 
+    private final GcMonitorConfiguration configuration;
     private final SortedMap<String, MonitoredCollector> monitoredCollectors;
     private final SortedMap<String, CollectorStatistics> perCollectorStatistics;
 
@@ -32,7 +35,7 @@ public class GcStatistics implements PrettyPrintable {
         long currentTimeMillis = configuration.getClock().currentTimeMillis();
 
         Optional<CollectorStatistics> aggregatedStatistics;
-        if (garbageCollectorMXBeans.size() > 1 && configuration.isAggregateStatFromDifferentCollectors()) {
+        if (garbageCollectorMXBeans.size() > 1 && configuration.isAggregateDifferentCollectors()) {
             aggregatedStatistics = Optional.of(createCollectorStatistics(configuration, currentTimeMillis));
             perCollectorStatistics.put(GcMonitorConfiguration.AGGREGATED_COLLECTOR_NAME, aggregatedStatistics.get());
         } else {
@@ -45,7 +48,7 @@ public class GcStatistics implements PrettyPrintable {
             MonitoredCollector monitoredCollector = new MonitoredCollector(bean, aggregatedStatistics, collectorStatistics);
             monitoredCollectors.put(bean.getName(), monitoredCollector);
         }
-        return new GcStatistics(monitoredCollectors, perCollectorStatistics);
+        return new GcStatistics(configuration, monitoredCollectors, perCollectorStatistics);
     }
 
     private static CollectorStatistics createCollectorStatistics(GcMonitorConfiguration configuration, long currentTimeMillis) {
@@ -57,7 +60,8 @@ public class GcStatistics implements PrettyPrintable {
         return new CollectorStatistics(windows);
     }
 
-    private GcStatistics(SortedMap<String, MonitoredCollector> monitoredCollectors, SortedMap<String, CollectorStatistics> perCollectorStatistics) {
+    private GcStatistics(GcMonitorConfiguration configuration, SortedMap<String, MonitoredCollector> monitoredCollectors, SortedMap<String, CollectorStatistics> perCollectorStatistics) {
+        this.configuration = configuration;
         this.monitoredCollectors = monitoredCollectors;
         this.perCollectorStatistics = perCollectorStatistics;
     }
@@ -67,12 +71,34 @@ public class GcStatistics implements PrettyPrintable {
         monitoredCollector.handleNotification(notification);
     }
 
-    @Override
-    public void printItself(StringBuilder builder, String indent) {
-        perCollectorStatistics.forEach((collectorName, statistics) -> {
-            builder.append("\n\t").append(collectorName).append("=\n");
-            statistics.printItself(builder, indent);
+    public GcMonitorSnapshot getSnapshot() {
+        long currentTimeMillis = configuration.getClock().currentTimeMillis();
+
+        Map<String, Map<String, CollectorWindowSnapshot>> perCollectorSnapshots = new HashMap<>();
+        perCollectorStatistics.forEach((collectorName, collectorStatistics) -> {
+            Map<String, CollectorWindowSnapshot> collectorMap = new HashMap<>();
+            perCollectorSnapshots.put(collectorName, collectorMap);
+            collectorStatistics.getWindows().forEach((windowName, window) -> {
+                CollectorWindowSnapshot windowSnapshot = window.getSnapshot(currentTimeMillis);
+                collectorMap.put(windowName, windowSnapshot);
+            });
         });
+
+        return new GcMonitorSnapshot(perCollectorSnapshots);
+    }
+
+    public static GcMonitorSnapshot createEmptySnapshot(GcMonitorConfiguration configuration) {
+        Map<String, Map<String, CollectorWindowSnapshot>> perCollectorSnapshots = new HashMap<>();
+        for (String collectorName : configuration.getCollectorNames()) {
+            Map<String, CollectorWindowSnapshot> collectorMap = new HashMap<>();
+            perCollectorSnapshots.put(collectorName, collectorMap);
+            for (String windowName : configuration.getWindowNames()) {
+                CollectorWindowSnapshot fakeSnapshot = new CollectorWindowSnapshot(EmptySnapshot.INSTANCE, 0L, 0.0d);
+                collectorMap.put(windowName, fakeSnapshot);
+            }
+        }
+
+        return new GcMonitorSnapshot(perCollectorSnapshots);
     }
 
 }
