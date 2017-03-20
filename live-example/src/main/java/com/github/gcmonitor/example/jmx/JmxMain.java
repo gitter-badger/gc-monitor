@@ -22,6 +22,7 @@ import com.github.gcmonitor.integration.jmx.GcMonitorStatistics;
 
 import javax.management.*;
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -52,14 +53,15 @@ public class JmxMain {
         server.registerMBean(consumer, consumerName);
 
         ObjectName monitorName = new ObjectName("com.github.gcmonitor:type=GcMonitor");
-        GcMonitor gcMonitor = new GcMonitor();
+        GcMonitor gcMonitor = GcMonitor.builder()
+                .addRollingWindow("15min", Duration.ofMinutes(15))
+                .build();
         server.registerMBean(new GcMonitorStatistics(gcMonitor), monitorName);
 
         try {
             while (true) {
                 consumer.consume(ThreadLocalRandom.current().nextInt(10) + 1,  1);
                 consumer.consume(ThreadLocalRandom.current().nextInt(20) + 100,  1);
-                System.out.println(gcMonitor.getPrettyPrintableStatistics());
                 TimeUnit.SECONDS.sleep(5);
             }
         } finally {
