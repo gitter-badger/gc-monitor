@@ -16,8 +16,16 @@
 
 package com.github.gcmonitor.integration.jmx;
 
-import com.github.gcmonitor.integration.jmx.data.GcMonitorData;
+import javax.management.openmbean.CompositeData;
 
-public interface GcMonitorStatisticsMXBean {
-    GcMonitorData getGcMonitorData();
+/**
+ * TODO add javadoc
+ */
+public interface GcMonitorStatisticsMBean {
+
+    /**
+     * TODO add javadoc
+     */
+    CompositeData getGcMonitorData();
+
 }
