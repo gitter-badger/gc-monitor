@@ -18,7 +18,7 @@ package com.github.gcmonitor.example.jmx;
 
 import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.example.MemoryConsumer;
-import com.github.gcmonitor.integration.jmx.GcMonitorStatistics;
+import com.github.gcmonitor.integration.jmx.GcStatistics;
 
 import javax.management.*;
 import java.lang.management.ManagementFactory;
@@ -56,7 +56,7 @@ public class JmxMain {
         GcMonitor gcMonitor = GcMonitor.builder()
                 .addRollingWindow("15min", Duration.ofMinutes(15))
                 .build();
-        server.registerMBean(new GcMonitorStatistics(gcMonitor), monitorName);
+        server.registerMBean(new GcStatistics(gcMonitor), monitorName);
 
         try {
             while (true) {

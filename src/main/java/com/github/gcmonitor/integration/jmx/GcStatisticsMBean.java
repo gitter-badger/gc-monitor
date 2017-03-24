@@ -21,7 +21,7 @@ import javax.management.openmbean.CompositeData;
 /**
  * TODO add javadoc
  */
-public interface GcMonitorStatisticsMBean {
+public interface GcStatisticsMBean {
 
     /**
      * TODO add javadoc
