@@ -17,6 +17,7 @@
 package com.github.gcmonitor.stat;
 
 import com.codahale.metrics.Histogram;
+import com.github.gcmonitor.GcMonitorConfiguration;
 
 import javax.management.Notification;
 import java.lang.management.GarbageCollectorMXBean;

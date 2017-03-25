@@ -22,7 +22,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.stat.Formatter;
-import com.github.gcmonitor.stat.GcMonitorConfiguration;
+import com.github.gcmonitor.GcMonitorConfiguration;
 
 import java.math.BigDecimal;
 import java.util.HashMap;

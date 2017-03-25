@@ -17,7 +17,6 @@
 
 package com.github.gcmonitor;
 
-import com.github.gcmonitor.stat.GcMonitorConfiguration;
 import com.github.gcmonitor.stat.WindowSpecification;
 import com.github.rollingmetrics.util.Clock;
 

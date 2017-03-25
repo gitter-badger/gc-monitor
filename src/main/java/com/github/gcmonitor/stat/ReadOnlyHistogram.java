@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.github.gcmonitor;
+package com.github.gcmonitor.stat;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Snapshot;

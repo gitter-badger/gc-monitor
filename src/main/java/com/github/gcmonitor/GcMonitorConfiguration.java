@@ -14,8 +14,9 @@
  *    limitations under the License.
  */
 
-package com.github.gcmonitor.stat;
+package com.github.gcmonitor;
 
+import com.github.gcmonitor.stat.WindowSpecification;
 import com.github.rollingmetrics.util.Clock;
 
 import java.lang.management.GarbageCollectorMXBean;

@@ -17,7 +17,6 @@
 package com.github.gcmonitor.stat;
 
 import com.codahale.metrics.Histogram;
-import com.github.gcmonitor.ReadOnlyHistogram;
 import com.github.rollingmetrics.counter.WindowCounter;
 
 import java.time.Duration;
