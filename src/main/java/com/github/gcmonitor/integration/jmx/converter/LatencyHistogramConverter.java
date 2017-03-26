@@ -3,8 +3,8 @@ package com.github.gcmonitor.integration.jmx.converter;
 import com.codahale.metrics.Snapshot;
 import com.github.gcmonitor.GcMonitorConfiguration;
 import com.github.gcmonitor.stat.CollectorWindow;
-import com.github.gcmonitor.stat.CollectorWindowSnapshot;
 import com.github.gcmonitor.stat.Formatter;
+import com.github.gcmonitor.stat.GcMonitorSnapshot;
 
 import javax.management.openmbean.*;
 import java.util.Arrays;
@@ -12,10 +12,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class LatencyHistogramConverter implements Converter<CollectorWindowSnapshot> {
+public class LatencyHistogramConverter implements Converter {
+
+    public static String MIN_NAME = "min";
+    public static String MAX_NAME = "max";
+    public static String MEAN_NAME = "mean";
+    public static String MEDIAN_NAME = "median";
+    public static String STD_DEVIATION_NAME = "stdDeviation";
+
+    public static final String TYPE_NAME = WindowConverter.TYPE_NAME + ".histogram";
+    public static final String TYPE_DESCRIPTION = "Shows latencies of GC pauses for collector.";
+
+    public LatencyHistogramConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) {
+        this.extractors = extractors;
+    }
 
     @Override
-    public CompositeData map(CollectorWindowSnapshot source) {
+    public CompositeData map(GcMonitorSnapshot snapshot) {
         return null;
     }
 
@@ -24,22 +37,13 @@ public class LatencyHistogramConverter implements Converter<CollectorWindowSnaps
         return null;
     }
 
-    private static Map<String, Object> createLatencyValues(MonitorSnapshotConverter.GcLatencyHistogramDataType type, CollectorWindow window, GcMonitorConfiguration configuration) {
+    private static Map<String, Object> createLatencyValues(SnapshotConverter.GcLatencyHistogramDataType type, CollectorWindow window, GcMonitorConfiguration configuration) {
         int decimalPoints = configuration.getDecimalPoints();
         Map<String, Object> values = new HashMap<>();
         Snapshot snapshot = window.getHistogram().getSnapshot();
         type.getExtractors().forEach((key, valueExtractor) -> values.put(key, valueExtractor.apply(snapshot, decimalPoints)));
         return values;
     }
-
-    public static String MIN_NAME = "min";
-    public static String MAX_NAME = "max";
-    public static String MEAN_NAME = "mean";
-    public static String MEDIAN_NAME = "median";
-    public static String STD_DEVIATION_NAME = "stdDeviation";
-
-    public static final String TYPE_NAME = GcCollectorWindowDataType.TYPE_NAME + ".histogram";
-    public static final String DESCRIPTION = "Shows latencies of GC pauses for collector.";
 
     private static String[] predefinedItemNames = new String[] {
             MIN_NAME,
@@ -77,7 +81,7 @@ public class LatencyHistogramConverter implements Converter<CollectorWindowSnaps
         return extractors;
     }
 
-    public static MonitorSnapshotConverter.GcLatencyHistogramDataType buildCompositeType(GcMonitorConfiguration configuration) {
+    public static SnapshotConverter.GcLatencyHistogramDataType buildCompositeType(GcMonitorConfiguration configuration) {
         double[] percentiles = configuration.getPercentiles();
         int percentileCount = percentiles.length;
         String[] itemNames = Arrays.copyOf(predefinedItemNames, predefinedItemNames.length + percentileCount);
@@ -96,7 +100,7 @@ public class LatencyHistogramConverter implements Converter<CollectorWindowSnaps
         }
 
         try {
-            return new MonitorSnapshotConverter.GcLatencyHistogramDataType(itemNames, itemDescriptions, itemTypes, extractors);
+            return new SnapshotConverter.GcLatencyHistogramDataType(itemNames, itemDescriptions, itemTypes, extractors);
         } catch (OpenDataException e) {
             throw new IllegalStateException(e);
         }

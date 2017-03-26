@@ -1,39 +1,43 @@
 package com.github.gcmonitor.integration.jmx.converter;
 
 import com.github.gcmonitor.GcMonitorConfiguration;
-import com.github.gcmonitor.stat.CollectorStatistics;
 import com.github.gcmonitor.stat.CollectorWindow;
-import com.github.gcmonitor.stat.CollectorWindowSnapshot;
+import com.github.gcmonitor.stat.GcMonitorSnapshot;
 
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeType;
+import javax.management.openmbean.OpenDataException;
 import javax.management.openmbean.OpenType;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-public class CollectorConverter implements Converter<Map<String, CollectorWindowSnapshot>> {
+public class CollectorConverter implements Converter {
 
-    public static final String TYPE_DESCRIPTION = "Shows aggregated information about particular garbage collector";
-    public static final String TYPE_NAME = MonitorSnapshotConverter.TYPE_NAME + ".collector";
+    static final String TYPE_DESCRIPTION = "Shows aggregated information about particular garbage collector";
+    static final String TYPE_NAME = SnapshotConverter.TYPE_NAME + ".collector";
 
     private final CompositeType type;
+    private final SortedMap<String, WindowConverter> windowConverters = new TreeMap<>();
 
-    public CollectorConverter(GcMonitorConfiguration configuration, String collectorName) {
-        this.type = type;
+    CollectorConverter(GcMonitorConfiguration configuration, String collectorName) throws OpenDataException {
+        Set<String> windowNames = configuration.getWindowNames();
+        String[] itemNames = new String[windowNames.size()];
+        String[] itemDescriptions = new String[windowNames.size()];
+        OpenType<?>[] itemTypes = new OpenType<?>[windowNames.size()];
+
+        int i = 0;
+        for (String windowName : windowNames) {
+            WindowConverter windowConverter = new WindowConverter(configuration, collectorName, windowName);
+            itemNames[i] = windowName;
+            itemDescriptions[i] = windowName;
+            itemTypes[i] = windowConverter.getType();
+            i++;
+        }
+
+        this.type = new CompositeType(TYPE_NAME, TYPE_DESCRIPTION, itemNames, itemDescriptions, itemTypes);
     }
 
     @Override
-    public CompositeData map(Map<String, CollectorWindowSnapshot> source) {
-        // todo
-        return null;
-    }
-
-    @Override
-    public CompositeType getType() {
-        return type;
-    }
-
-    private static Map<String, Object> createCollectorValues(GcCollectorDataType type, CollectorStatistics collectorStatistics, GcMonitorConfiguration configuration) {
+    public CompositeData map(GcMonitorSnapshot snapshot) {
         HashMap<String, Object> values = new HashMap<>();
         GcCollectorWindowDataType windowType = type.getWindowType();
         for (CollectorWindow window : collectorStatistics.getWindows()) {
@@ -45,30 +49,9 @@ public class CollectorConverter implements Converter<Map<String, CollectorWindow
         return values;
     }
 
-    private Map<String, CompositeType> buildCollectorTypes(GcMonitorConfiguration configuration, Map<String, Map<String, CompositeType>> collectorWindowTypes) {
-        Map<String, CompositeType> result = new HashMap<>();
-        for (String collectorName : configuration.getCollectorNames()) {
-            long[] timeWindows = configuration.getWindowSpecifications();
-
-            Map<Long, String> namesByDuration = new HashMap<>();
-            String[] itemNames = new String[timeWindows.length];
-            String[] itemDescriptions = new String[timeWindows.length];
-            OpenType<?>[] itemTypes = new OpenType<?>[timeWindows.length];
-
-            GcCollectorWindowDataType windowType = GcCollectorWindowDataType.buildCompositeType(configuration);
-            for (int i = 0; i < timeWindows.length; i++) {
-                long durationSeconds = timeWindows[i];
-                String windowName = durationSeconds + " second window";
-                namesByDuration.put(durationSeconds, windowName);
-                itemNames[i] = windowName;
-                itemDescriptions[i] = windowName;
-                itemTypes[i] = windowType;
-            }
-            // TODO
-            CompositeType collectorType = null;
-            result.put(collectorName, collectorType);
-        }
-        return result;
+    @Override
+    public CompositeType getType() {
+        return type;
     }
 
 }

@@ -1,63 +1,51 @@
 package com.github.gcmonitor.integration.jmx.converter;
 
 import com.github.gcmonitor.GcMonitorConfiguration;
-import com.github.gcmonitor.stat.CollectorWindowSnapshot;
-
+import com.github.gcmonitor.stat.GcMonitorSnapshot;
 import javax.management.openmbean.*;
-import java.util.HashMap;
-import java.util.Map;
 
-public class WindowConverter implements Converter<CollectorWindowSnapshot> {
+public class WindowConverter implements Converter {
 
     public static final String TYPE_DESCRIPTION = "Shows aggregated information about particular garbage collector window";
     public static final String TYPE_NAME = CollectorConverter.TYPE_NAME + ".window";
 
-    private final CompositeType type;
+    private static final String UTILIZATION_FIELD = "utilization";
+    private static final String PAUSE_HISTOGRAM_FIELD = "pauseHistogram";
+    private static final String[] itemNames = new String[] {
+            UTILIZATION_FIELD,
+            PAUSE_HISTOGRAM_FIELD
+    };
 
-    public WindowConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) {
-        // todo
-        this.type = type;
+    private final CompositeType type;
+    private final UtilizationConverter utilizationConverter;
+    private final LatencyHistogramConverter latencyHistogramConverter;
+
+    public WindowConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) throws OpenDataException {
+        this.utilizationConverter = new UtilizationConverter(configuration, collectorName, windowName);
+        this.latencyHistogramConverter = new LatencyHistogramConverter(configuration, collectorName, windowName);
+
+        String[] itemDescriptions = new String[] {
+                "GC latency histogram",
+                "Collector utilization"
+        };
+        OpenType<?>[] itemTypes = new OpenType<?>[] {
+                utilizationConverter.getType(),
+                latencyHistogramConverter.getType()
+        };
+        this.type = new CompositeType(TYPE_NAME, TYPE_DESCRIPTION, itemNames, itemDescriptions, itemTypes);
     }
 
     @Override
-    public CompositeData map(CollectorWindowSnapshot source) {
-        return null;
+    public CompositeData map(GcMonitorSnapshot snapshot) throws OpenDataException {
+        return new CompositeDataSupport(type, itemNames, new Object[] {
+                utilizationConverter.map(snapshot),
+                latencyHistogramConverter.map(snapshot)
+        });
     }
 
     @Override
     public CompositeType getType() {
         return type;
-    }
-
-    private Map<String, Map<String, CompositeType>> buildCollectorWindowTypes(GcMonitorConfiguration configuration) throws OpenDataException {
-        Map<String, Map<String, CompositeType>> result = new HashMap<>();
-        for (String collectorName : configuration.getCollectorNames()) {
-            Map<String, CompositeType> collectorMap = new HashMap<>();
-            result.put(collectorName, collectorMap);
-            for (String windowName : configuration.getWindowNames()) {
-                String[] names = new String[] {
-                        DURATION_FIELD,
-                        STW_PERCENTAGE_FIELD
-                };
-                String[] descriptions = new String[] {
-                        "Time in milliseconds which JVM spent in STW GC pauses instead of doing real work",
-                        "Percentage of time which JVM spent in STW GC pauses instead of doing real work",
-                };
-                OpenType<?>[] types = new OpenType<?>[] {
-                        SimpleType.LONG,
-                        SimpleType.BIGDECIMAL
-                };
-                CompositeType windowType = new CompositeType(
-                        GC_MONITOR_COLLECTOR_WINDOW_TYPE_NAME,
-                        GC_MONITOR_COLLECTOR_WINDOW_TYPE_DESCRIPTION,
-                        names,
-                        descriptions,
-                        types
-                );
-                collectorMap.put(windowName, windowType);
-            }
-        }
-        return result;
     }
 
 }

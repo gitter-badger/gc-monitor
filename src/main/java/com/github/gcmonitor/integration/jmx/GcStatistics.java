@@ -17,7 +17,7 @@
 package com.github.gcmonitor.integration.jmx;
 
 import com.github.gcmonitor.GcMonitor;
-import com.github.gcmonitor.integration.jmx.converter.MonitorSnapshotConverter;
+import com.github.gcmonitor.integration.jmx.converter.SnapshotConverter;
 import com.github.gcmonitor.stat.GcMonitorSnapshot;
 
 import javax.management.openmbean.*;
@@ -28,17 +28,17 @@ import javax.management.openmbean.*;
 public class GcStatistics implements GcStatisticsMBean {
 
     private final GcMonitor gcMonitor;
-    private final MonitorSnapshotConverter monitorSnapshotConverter;
+    private final SnapshotConverter snapshotConverter;
 
     public GcStatistics(GcMonitor gcMonitor) {
         this.gcMonitor = gcMonitor;
-        this.monitorSnapshotConverter = new MonitorSnapshotConverter(gcMonitor.getConfiguration());
+        this.snapshotConverter = new SnapshotConverter(gcMonitor.getConfiguration());
     }
 
     @Override
     public CompositeData getGcMonitorData() {
         GcMonitorSnapshot snapshot = gcMonitor.getSnapshot();
-        return monitorSnapshotConverter.map(snapshot);
+        return snapshotConverter.map(snapshot);
     }
 
 }

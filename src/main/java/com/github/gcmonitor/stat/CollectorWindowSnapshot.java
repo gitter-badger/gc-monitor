@@ -23,14 +23,26 @@ import com.codahale.metrics.Snapshot;
  */
 public class CollectorWindowSnapshot {
 
-    private final Snapshot latencyHistogramSnapshot;
+    private final Snapshot pauseHistogramSnapshot;
     private final long millisSpentInGc;
     private final double percentageSpentInGc;
 
-    public CollectorWindowSnapshot(Snapshot latencyHistogramSnapshot, long millisSpentInGc, double percentageSpentInGc) {
-        this.latencyHistogramSnapshot = latencyHistogramSnapshot;
+    public CollectorWindowSnapshot(Snapshot pauseHistogramSnapshot, long millisSpentInGc, double percentageSpentInGc) {
+        this.pauseHistogramSnapshot = pauseHistogramSnapshot;
         this.millisSpentInGc = millisSpentInGc;
         this.percentageSpentInGc = percentageSpentInGc;
+    }
+
+    public double getPercentageSpentInGc() {
+        return percentageSpentInGc;
+    }
+
+    public long getMillisSpentInGc() {
+        return millisSpentInGc;
+    }
+
+    public Snapshot getPauseHistogramSnapshot() {
+        return pauseHistogramSnapshot;
     }
 
 }

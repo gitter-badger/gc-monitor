@@ -1,52 +1,39 @@
 package com.github.gcmonitor.integration.jmx.converter;
 
-import com.codahale.metrics.Snapshot;
 import com.github.gcmonitor.GcMonitorConfiguration;
 import com.github.gcmonitor.stat.*;
 
 import javax.management.openmbean.*;
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
-public class MonitorSnapshotConverter implements Converter<GcMonitorSnapshot> {
+public class SnapshotConverter implements Converter {
 
-    public static final String TYPE_DESCRIPTION = "Shows aggregated information about garbage collectors";
-    public static final String TYPE_NAME = "com.github.gcmonitor.snapshot";
+    static final String TYPE_DESCRIPTION = "Shows aggregated information about garbage collectors";
+    static final String TYPE_NAME = "com.github.gcmonitor.snapshot";
 
     private final CompositeType type;
+    private final SortedMap<String, CollectorConverter> collectorConverters = new TreeMap<>();
 
-    public MonitorSnapshotConverter(GcMonitorConfiguration configuration) {
-
-    }
-
-    private CompositeType buildGcMonitorCompositeType(GcMonitorConfiguration configuration, Map<String, CompositeType> collectorTypes) {
+    public SnapshotConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) throws OpenDataException {
         Set<String> collectorNames = configuration.getCollectorNames();
-
-        final Map<String, GcCollectorDataType> collectorTypes;
         String[] itemNames = new String[collectorNames.size()];
         String[] itemDescriptions = new String[collectorNames.size()];
         OpenType<?>[] itemTypes = new OpenType<?>[collectorNames.size()];
-        Map<String, GcCollectorDataType> collectorTypes = new HashMap<>();
+
         int i = 0;
-        GcCollectorDataType collectorType = GcCollectorDataType.buildCompositeType(configuration);
         for (String collectorName : collectorNames) {
-            collectorTypes.put(collectorName, collectorType);
+            CollectorConverter collectorConverter = new CollectorConverter(configuration, collectorName);
+            collectorConverters.put(collectorName, collectorConverter);
             itemNames[i] = collectorName;
             itemDescriptions[i] = "Shows aggregated information about garbage collector [" + collectorName + "]";
-            itemTypes[i] = collectorType;
+            itemTypes[i] = collectorConverter.getType();
             i++;
         }
 
-        try {
-            return new CompositeType(GC_MONITOR_TYPE_NAME, GC_MONITOR_TYPE_DESCRIPTION, itemNames, itemDescriptions, itemTypes);
-        } catch (OpenDataException e) {
-            throw new IllegalStateException(e);
-        }
+        this.type = new CompositeType(TYPE_NAME, TYPE_DESCRIPTION, itemNames, itemDescriptions, itemTypes);
     }
 
     public CompositeData map(GcMonitorSnapshot snapshot) {
