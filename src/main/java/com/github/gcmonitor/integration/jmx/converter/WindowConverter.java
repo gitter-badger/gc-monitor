@@ -36,11 +36,16 @@ public class WindowConverter implements Converter {
     }
 
     @Override
-    public CompositeData map(GcMonitorSnapshot snapshot) throws OpenDataException {
-        return new CompositeDataSupport(type, itemNames, new Object[] {
+    public CompositeData map(GcMonitorSnapshot snapshot) {
+        Object[] itemValues = {
                 utilizationConverter.map(snapshot),
                 latencyHistogramConverter.map(snapshot)
-        });
+        };
+        try {
+            return new CompositeDataSupport(type, itemNames, itemValues);
+        } catch (OpenDataException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override

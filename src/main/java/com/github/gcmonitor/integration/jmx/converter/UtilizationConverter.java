@@ -9,7 +9,7 @@ import javax.management.openmbean.*;
 import java.math.BigDecimal;
 
 
-class UtilizationConverter implements Converter {
+public class UtilizationConverter implements Converter {
 
     public static final String TYPE_NAME = WindowConverter.TYPE_NAME + ".utilization";
     public static final String TYPE_DESCRIPTION = "Shows information about collector utilization.";
@@ -49,16 +49,18 @@ class UtilizationConverter implements Converter {
     }
 
     @Override
-    public CompositeData map(GcMonitorSnapshot snapshot) throws OpenDataException {
+    public CompositeData map(GcMonitorSnapshot snapshot) {
         CollectorWindowSnapshot windowSnapshot = snapshot.getCollectorWindowSnapshot(collectorName, windowName);
 
         long gcDuration = windowSnapshot.getMillisSpentInGc();
         double percentage = windowSnapshot.getPercentageSpentInGc();
         BigDecimal formattedPercentage = Formatter.roundToDigits(percentage, configuration.getDecimalPoints());
-        return new CompositeDataSupport(type, ITEM_NAMES, new Object[] {
-                gcDuration,
-                formattedPercentage
-        });
+        Object[] itemValues = {gcDuration, formattedPercentage};
+        try {
+            return new CompositeDataSupport(type, ITEM_NAMES, itemValues);
+        } catch (OpenDataException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override

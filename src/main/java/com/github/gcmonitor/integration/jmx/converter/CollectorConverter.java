@@ -1,13 +1,9 @@
 package com.github.gcmonitor.integration.jmx.converter;
 
 import com.github.gcmonitor.GcMonitorConfiguration;
-import com.github.gcmonitor.stat.CollectorWindow;
 import com.github.gcmonitor.stat.GcMonitorSnapshot;
 
-import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.CompositeType;
-import javax.management.openmbean.OpenDataException;
-import javax.management.openmbean.OpenType;
+import javax.management.openmbean.*;
 import java.util.*;
 
 public class CollectorConverter implements Converter {
@@ -38,15 +34,13 @@ public class CollectorConverter implements Converter {
 
     @Override
     public CompositeData map(GcMonitorSnapshot snapshot) {
-        HashMap<String, Object> values = new HashMap<>();
-        GcCollectorWindowDataType windowType = type.getWindowType();
-        for (CollectorWindow window : collectorStatistics.getWindows()) {
-            long duration = window.getWindowDurationSeconds();
-            String windowName = type.getWindowName(duration);
-            GcCollectorWindowData windowData = new GcCollectorWindowData(windowType, window, configuration);
-            values.put(windowName, windowData);
+        HashMap<String, Object> data = new HashMap<>();
+        windowConverters.forEach((name, converter) -> data.put(name, converter.map(snapshot)));
+        try {
+            return new CompositeDataSupport(type, data);
+        } catch (OpenDataException e) {
+            throw new IllegalStateException(e);
         }
-        return values;
     }
 
     @Override

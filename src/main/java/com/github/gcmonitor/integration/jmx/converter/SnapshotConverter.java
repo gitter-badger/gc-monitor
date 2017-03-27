@@ -17,7 +17,7 @@ public class SnapshotConverter implements Converter {
     private final CompositeType type;
     private final SortedMap<String, CollectorConverter> collectorConverters = new TreeMap<>();
 
-    public SnapshotConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) throws OpenDataException {
+    public SnapshotConverter(GcMonitorConfiguration configuration) throws OpenDataException {
         Set<String> collectorNames = configuration.getCollectorNames();
         String[] itemNames = new String[collectorNames.size()];
         String[] itemDescriptions = new String[collectorNames.size()];
@@ -38,12 +38,14 @@ public class SnapshotConverter implements Converter {
 
     public CompositeData map(GcMonitorSnapshot snapshot) {
         HashMap<String, Object> data = new HashMap<>();
-        statistics.forEach((collectorName, collectorStatistics) -> {
-            GcCollectorDataType collectorDataType = type.getCollectorType(collectorName);
-            GcCollectorData collectorData = new GcCollectorData(collectorDataType, collectorStatistics, configuration);
-            data.put(collectorName, collectorData);
+        collectorConverters.forEach((name, converter) -> {
+            data.put(name, converter.map(snapshot));
         });
-        return data;
+        try {
+            return new CompositeDataSupport(type, data);
+        } catch (OpenDataException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override

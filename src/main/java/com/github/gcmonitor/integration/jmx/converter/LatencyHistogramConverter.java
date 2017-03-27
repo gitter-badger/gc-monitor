@@ -2,7 +2,6 @@ package com.github.gcmonitor.integration.jmx.converter;
 
 import com.codahale.metrics.Snapshot;
 import com.github.gcmonitor.GcMonitorConfiguration;
-import com.github.gcmonitor.stat.CollectorWindow;
 import com.github.gcmonitor.stat.Formatter;
 import com.github.gcmonitor.stat.GcMonitorSnapshot;
 
@@ -20,30 +19,8 @@ public class LatencyHistogramConverter implements Converter {
     public static String MEDIAN_NAME = "median";
     public static String STD_DEVIATION_NAME = "stdDeviation";
 
-    public static final String TYPE_NAME = WindowConverter.TYPE_NAME + ".histogram";
+    public static final String TYPE_NAME = WindowConverter.TYPE_NAME + ".pauseHistogram";
     public static final String TYPE_DESCRIPTION = "Shows latencies of GC pauses for collector.";
-
-    public LatencyHistogramConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) {
-        this.extractors = extractors;
-    }
-
-    @Override
-    public CompositeData map(GcMonitorSnapshot snapshot) {
-        return null;
-    }
-
-    @Override
-    public CompositeType getType() {
-        return null;
-    }
-
-    private static Map<String, Object> createLatencyValues(SnapshotConverter.GcLatencyHistogramDataType type, CollectorWindow window, GcMonitorConfiguration configuration) {
-        int decimalPoints = configuration.getDecimalPoints();
-        Map<String, Object> values = new HashMap<>();
-        Snapshot snapshot = window.getHistogram().getSnapshot();
-        type.getExtractors().forEach((key, valueExtractor) -> values.put(key, valueExtractor.apply(snapshot, decimalPoints)));
-        return values;
-    }
 
     private static String[] predefinedItemNames = new String[] {
             MIN_NAME,
@@ -76,22 +53,26 @@ public class LatencyHistogramConverter implements Converter {
     }
 
     private final Map<String, BiFunction<Snapshot, Integer, Object>> extractors;
+    private final GcMonitorConfiguration configuration;
+    private final String collectorName;
+    private final String windowName;
+    private final CompositeType type;
 
-    public Map<String, BiFunction<Snapshot, Integer, Object>> getExtractors() {
-        return extractors;
-    }
+    public LatencyHistogramConverter(GcMonitorConfiguration configuration, String collectorName, String windowName) throws OpenDataException {
+        this.configuration = configuration;
+        this.collectorName = collectorName;
+        this.windowName = windowName;
 
-    public static SnapshotConverter.GcLatencyHistogramDataType buildCompositeType(GcMonitorConfiguration configuration) {
         double[] percentiles = configuration.getPercentiles();
         int percentileCount = percentiles.length;
         String[] itemNames = Arrays.copyOf(predefinedItemNames, predefinedItemNames.length + percentileCount);
         String[] itemDescriptions = Arrays.copyOf(predefinedItemDescriptions, predefinedItemNames.length + percentileCount);
         OpenType<?>[] itemTypes = Arrays.copyOf(predefinedItemTypes, predefinedItemTypes.length + percentileCount);
 
-        Map<String, BiFunction<Snapshot, Integer, Object>> extractors = new HashMap<>(predefinedExtractors);
+        this.extractors = new HashMap<>(predefinedExtractors);
         for (int i = 0; i < percentileCount; i++) {
             double percentile = percentiles[i];
-            String printablePercentileName = printablePercentile(percentile);
+            String printablePercentileName = printablePercentileName(percentile);
             extractors.put(printablePercentileName,
                     (snapshot, decimalPoints) -> Formatter.roundToDigits(snapshot.getValue(percentile), decimalPoints));
             itemNames[predefinedItemNames.length + i] = printablePercentileName;
@@ -99,19 +80,32 @@ public class LatencyHistogramConverter implements Converter {
             itemTypes[predefinedItemTypes.length + i] = SimpleType.BIGDECIMAL;
         }
 
+        this.type = new CompositeType(TYPE_NAME, TYPE_DESCRIPTION, itemNames, itemDescriptions, itemTypes);
+    }
+
+    @Override
+    public CompositeData map(GcMonitorSnapshot monitorSnapshot) {
+        int decimalPoints = configuration.getDecimalPoints();
+        Map<String, Object> values = new HashMap<>();
+        Snapshot snapshot = monitorSnapshot.getCollectorWindowSnapshot(collectorName, windowName).getPauseHistogramSnapshot();
+        extractors.forEach((key, valueExtractor) -> values.put(key, valueExtractor.apply(snapshot, decimalPoints)));
         try {
-            return new SnapshotConverter.GcLatencyHistogramDataType(itemNames, itemDescriptions, itemTypes, extractors);
+            return new CompositeDataSupport(type, values);
         } catch (OpenDataException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    private static String printablePercentile(double percentile) {
+    @Override
+    public CompositeType getType() {
+        return type;
+    }
+
+    private static String printablePercentileName(double percentile) {
         while (Math.floor(percentile) != percentile || Math.ceil(percentile) != percentile) {
             percentile = percentile * 10;
         }
         return "" + percentile + "thPercentile";
     }
-
 
 }
