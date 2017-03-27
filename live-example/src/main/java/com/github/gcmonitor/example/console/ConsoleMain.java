@@ -14,20 +14,16 @@
  *    limitations under the License.
  */
 
-package com.github.gcmonitor.example.dropwizard;
+package com.github.gcmonitor.example.console;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.MetricSet;
 import com.github.gcmonitor.GcMonitor;
 import com.github.gcmonitor.example.MemoryConsumer;
-import com.github.gcmonitor.integration.dropwizard.DropwizardAdapter;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-public class Main {
+public class ConsoleMain {
 
     /*
     -Xmx1024m
@@ -53,15 +49,11 @@ public class Main {
                 .build();
         gcMonitor.start();
 
-        MetricRegistry registry = new MetricRegistry();
-        registry.registerAll(DropwizardAdapter.toMetricSet("jvm-gc-monitor", gcMonitor));
-        ConsoleReporter consoleReporter = ConsoleReporter.forRegistry(registry).build();
-        consoleReporter.start(10, TimeUnit.SECONDS);
-
         try {
             while (true) {
                 consumer.consume(ThreadLocalRandom.current().nextInt(10) + 1,  1);
                 consumer.consume(ThreadLocalRandom.current().nextInt(20) + 100,  1);
+                System.out.println(gcMonitor.getSnapshot());
                 TimeUnit.SECONDS.sleep(5);
             }
         } finally {

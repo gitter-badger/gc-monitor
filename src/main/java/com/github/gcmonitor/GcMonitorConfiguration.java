@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class GcMonitorConfiguration {
 
-    public static final String AGGREGATED_COLLECTOR_NAME = "Aggregated-Collector";
+    public static final String AGGREGATED_COLLECTOR_NAME = "AggregatedCollector";
     public static final String UNIFORM_WINDOW_NAME = "uniform";
     public static final int MAX_WINDOWS = 20;
     public static final int COUNTER_CHUNKS = 10;
@@ -43,11 +43,15 @@ public class GcMonitorConfiguration {
     public GcMonitorConfiguration(SortedMap<String, WindowSpecification> windowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, boolean aggregateDifferentCollectors, Clock clock) {
         this.windowSpecifications = Collections.unmodifiableSortedMap(windowSpecifications);
         this.garbageCollectorMXBeans = Collections.unmodifiableList(garbageCollectorMXBeans);
-        this.collectorNames = new TreeSet<>();
-        garbageCollectorMXBeans.forEach(bean -> collectorNames.add(bean.getName()));
         this.percentiles = percentiles.clone();
         this.aggregateDifferentCollectors = aggregateDifferentCollectors;
         this.clock = clock;
+
+        this.collectorNames = new TreeSet<>();
+        garbageCollectorMXBeans.forEach(bean -> collectorNames.add(bean.getName()));
+        if (aggregateDifferentCollectors && garbageCollectorMXBeans.size() > 1) {
+            collectorNames.add(AGGREGATED_COLLECTOR_NAME);
+        }
     }
 
     public List<GarbageCollectorMXBean> getGarbageCollectorMXBeans() {

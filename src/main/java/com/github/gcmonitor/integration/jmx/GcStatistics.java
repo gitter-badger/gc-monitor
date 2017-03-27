@@ -32,7 +32,11 @@ public class GcStatistics implements GcStatisticsMBean {
 
     public GcStatistics(GcMonitor gcMonitor) {
         this.gcMonitor = gcMonitor;
-        this.snapshotConverter = new SnapshotConverter(gcMonitor.getConfiguration());
+        try {
+            this.snapshotConverter = new SnapshotConverter(gcMonitor.getConfiguration());
+        } catch (OpenDataException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override

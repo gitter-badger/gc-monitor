@@ -21,6 +21,7 @@ import com.github.gcmonitor.example.MemoryConsumer;
 import com.github.gcmonitor.integration.jmx.GcStatistics;
 
 import javax.management.*;
+import javax.management.openmbean.CompositeData;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
@@ -56,13 +57,16 @@ public class JmxMain {
         GcMonitor gcMonitor = GcMonitor.builder()
                 .addRollingWindow("15min", Duration.ofMinutes(15))
                 .build();
-        server.registerMBean(new GcStatistics(gcMonitor), monitorName);
+        GcStatistics monitorMbean = new GcStatistics(gcMonitor);
+        server.registerMBean(monitorMbean, monitorName);
 
         try {
             while (true) {
                 consumer.consume(ThreadLocalRandom.current().nextInt(10) + 1,  1);
                 consumer.consume(ThreadLocalRandom.current().nextInt(20) + 100,  1);
                 TimeUnit.SECONDS.sleep(5);
+                CompositeData data = monitorMbean.getGcMonitorData();
+                System.out.println(data);
             }
         } finally {
             consumer.close();

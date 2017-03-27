@@ -45,4 +45,13 @@ public class CollectorWindowSnapshot {
         return pauseHistogramSnapshot;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CollectorWindowSnapshot{");
+        sb.append("pauseHistogramSnapshot=").append(pauseHistogramSnapshot);
+        sb.append(", millisSpentInGc=").append(millisSpentInGc);
+        sb.append(", percentageSpentInGc=").append(percentageSpentInGc);
+        sb.append('}');
+        return sb.toString();
+    }
 }
