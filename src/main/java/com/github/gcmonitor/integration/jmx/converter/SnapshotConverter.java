@@ -38,9 +38,7 @@ public class SnapshotConverter implements Converter {
 
     public CompositeData map(GcMonitorSnapshot snapshot) {
         HashMap<String, Object> data = new HashMap<>();
-        collectorConverters.forEach((name, converter) -> {
-            data.put(name, converter.map(snapshot));
-        });
+        collectorConverters.forEach((name, converter) -> data.put(name, converter.map(snapshot)));
         try {
             return new CompositeDataSupport(type, data);
         } catch (OpenDataException e) {

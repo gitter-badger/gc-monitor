@@ -25,4 +25,12 @@ public class Formatter {
         return new BigDecimal(value).setScale(digits, RoundingMode.CEILING);
     }
 
+    public static String toPrintablePercentileName(double percentile) {
+        percentile = percentile * 100;
+        while (Math.floor(percentile) != percentile || Math.ceil(percentile) != percentile) {
+            percentile *= 10;
+        }
+        return ("" + percentile + "thPercentile").replaceAll("\\.0", "");
+    }
+
 }

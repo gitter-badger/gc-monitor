@@ -23,6 +23,7 @@ public class CollectorConverter implements Converter {
         int i = 0;
         for (String windowName : windowNames) {
             WindowConverter windowConverter = new WindowConverter(configuration, collectorName, windowName);
+            windowConverters.put(windowName, windowConverter);
             itemNames[i] = windowName;
             itemDescriptions[i] = windowName;
             itemTypes[i] = windowConverter.getType();

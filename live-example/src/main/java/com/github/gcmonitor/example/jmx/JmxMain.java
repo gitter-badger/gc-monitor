@@ -47,26 +47,23 @@ public class JmxMain {
     -XX:+CMSScavengeBeforeRemark
      */
     public static void main(String[] args) throws NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException, MalformedObjectNameException, InterruptedException {
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-
-        ObjectName consumerName = new ObjectName("com.github.gcmonitor:type=MemoryConsumer");
-        MemoryConsumer consumer = new MemoryConsumer();
-        server.registerMBean(consumer, consumerName);
-
-        ObjectName monitorName = new ObjectName("com.github.gcmonitor:type=GcMonitor");
         GcMonitor gcMonitor = GcMonitor.builder()
                 .addRollingWindow("15min", Duration.ofMinutes(15))
                 .build();
+        gcMonitor.start();
+
         GcStatistics monitorMbean = new GcStatistics(gcMonitor);
+        ObjectName monitorName = new ObjectName("com.github.gcmonitor:type=GcMonitor");
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         server.registerMBean(monitorMbean, monitorName);
 
+        MemoryConsumer consumer = new MemoryConsumer();
         try {
             while (true) {
                 consumer.consume(ThreadLocalRandom.current().nextInt(10) + 1,  1);
                 consumer.consume(ThreadLocalRandom.current().nextInt(20) + 100,  1);
                 TimeUnit.SECONDS.sleep(5);
-                CompositeData data = monitorMbean.getGcMonitorData();
-                System.out.println(data);
+                System.out.println(monitorMbean.getGcMonitorData());
             }
         } finally {
             consumer.close();

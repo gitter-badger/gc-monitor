@@ -72,7 +72,7 @@ public class LatencyHistogramConverter implements Converter {
         this.extractors = new HashMap<>(predefinedExtractors);
         for (int i = 0; i < percentileCount; i++) {
             double percentile = percentiles[i];
-            String printablePercentileName = printablePercentileName(percentile);
+            String printablePercentileName = Formatter.toPrintablePercentileName(percentile);
             extractors.put(printablePercentileName,
                     (snapshot, decimalPoints) -> Formatter.roundToDigits(snapshot.getValue(percentile), decimalPoints));
             itemNames[predefinedItemNames.length + i] = printablePercentileName;
@@ -99,13 +99,6 @@ public class LatencyHistogramConverter implements Converter {
     @Override
     public CompositeType getType() {
         return type;
-    }
-
-    private static String printablePercentileName(double percentile) {
-        while (Math.floor(percentile) != percentile || Math.ceil(percentile) != percentile) {
-            percentile = percentile * 10;
-        }
-        return "" + percentile + "thPercentile";
     }
 
 }

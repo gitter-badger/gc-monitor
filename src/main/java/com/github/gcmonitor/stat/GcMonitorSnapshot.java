@@ -42,9 +42,12 @@ public class GcMonitorSnapshot {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("GcMonitorSnapshot{");
-        sb.append("data=").append(data);
-        sb.append('}');
+        final StringBuilder sb = new StringBuilder();
+        data.forEach((collectorName, collectorWindows) -> {
+            collectorWindows.forEach((windowName, windowSnapshot) -> {
+                sb.append(collectorName).append("-").append(windowName).append("-") .append(windowSnapshot).append("\n");
+            });
+        });
         return sb.toString();
     }
 
