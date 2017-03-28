@@ -22,7 +22,7 @@ import java.math.RoundingMode;
 public class Formatter {
 
     public static BigDecimal roundToDigits(double value, int digits) {
-        return new BigDecimal(value).setScale(digits, RoundingMode.CEILING);
+        return new BigDecimal(value).setScale(digits, RoundingMode.HALF_UP);
     }
 
     public static String toPrintablePercentileName(double percentile) {
