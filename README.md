@@ -16,4 +16,43 @@ All statistics organized into rolling time windows, the windows are configurable
 - [JMX](http://www.oracle.com/technetwork/articles/java/javamanagement-140525.html)
 
 # Project state
-The library is under development. First release is proposed to April 2017.
+The library is in the middle of testing and documentation. First official stable release is planed to April 2017.
+
+# For the impatient adopters
+If you want to try early then use alpha build(or just build from sources by yourself)
+```xml
+<!-- gc-monitor itself -->
+<dependency>
+    <groupId>io.github.gc-monitor</groupId>
+    <artifactId>gc-monitor</artifactId>
+    <version>1.0.0-alpha</version>
+</dependency>
+
+<!-- Third-party dependencies required by gc-monitor -->
+<dependency>
+    <groupId>com.github.vladimir-bukhtoyarov</groupId>
+    <artifactId>rolling-metrics</artifactId>
+    <version>2.0.2</version>
+</dependency>
+<dependency>
+    <groupId>io.dropwizard.metrics</groupId>
+    <artifactId>metrics-core</artifactId>
+    <version>3.1.2</version>
+</dependency>
+<dependency>
+    <groupId>org.hdrhistogram</groupId>
+    <artifactId>HdrHistogram</artifactId>
+    <version>2.1.8</version>
+</dependency>
+```
+To get this alpha build it is need to add following repository: 
+```xml
+<repository>
+    <snapshots>
+        <enabled>false</enabled>
+    </snapshots>
+    <id>gc-monitor-bintray-repo</id>
+    <name>gc-monitor-bintray-repo</name>
+    <url>http://dl.bintray.com/vladimir-bukhtoyarov/maven</url>
+</repository>
+```
