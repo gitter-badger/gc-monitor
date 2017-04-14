@@ -1,4 +1,6 @@
 # gc-monitor
+
+[![Join the chat at https://gitter.im/vladimir-bukhtoyarov/gc-monitor](https://badges.gitter.im/vladimir-bukhtoyarov/gc-monitor.svg)](https://gitter.im/vladimir-bukhtoyarov/gc-monitor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Set of advanced monitoring metrics for OpenJDK Garbage collector.
 
 The main feature of ```gc-monitor``` is ability to work without configuration of GC logging at JVM level, ```gc-monitor``` works fine without any options like ```-XX:+PrintGC```,
