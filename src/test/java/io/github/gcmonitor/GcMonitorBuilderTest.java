@@ -16,11 +16,18 @@
 
 package io.github.gcmonitor;
 
+import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+import java.util.SortedSet;
 
 import static org.junit.Assert.*;
 
@@ -32,7 +39,7 @@ public class GcMonitorBuilderTest {
         GcMonitorBuilder builder = GcMonitor.builder();
     }
 
-    public static class PercentilesValidation extends GcMonitorBuilderTestBase {
+    public static class PercentileSettings extends GcMonitorBuilderTestBase {
 
         @Test(expected = IllegalArgumentException.class)
         public void shouldDisallowNegativePercentile() {
@@ -59,18 +66,17 @@ public class GcMonitorBuilderTest {
             builder.withPercentiles(null);
         }
 
-    }
-
-    public static class ClockValidation extends GcMonitorBuilderTestBase {
-
-        @Test(expected = IllegalArgumentException.class)
-        public void shouldDisallowNullClock() {
-            builder.withClock(null);
+        @Test
+        public void shouldSuccessfullyApplyCustomPercentiles() {
+            double[] customPercentiles = {0.25, 0.5, 0.9, 0.999};
+            builder.withPercentiles(customPercentiles);
+            GcMonitor monitor = builder.build();
+            assertArrayEquals(customPercentiles, monitor.getConfiguration().getPercentiles(), 0.0d);
         }
 
     }
 
-    public static class RollingWindowValidation extends GcMonitorBuilderTestBase {
+    public static class RollingWindowSettings extends GcMonitorBuilderTestBase {
 
         @Test(expected = IllegalArgumentException.class)
         public void shouldDisallowNegativeWindow() {
@@ -98,7 +104,99 @@ public class GcMonitorBuilderTest {
             builder.addRollingWindow("my-window", Duration.ofMinutes(90));
         }
 
+        @Test
+        public void uniformWindowShouldBeEnabledByDefault() {
+            GcMonitor monitor = builder.build();
+            Set<String> windows = monitor.getConfiguration().getWindowNames();
+            assertTrue(windows.contains(GcMonitorConfiguration.UNIFORM_WINDOW_NAME));
+        }
+
+        @Test
+        public void testDisableUniformWindow() {
+            GcMonitor monitor = builder.withoutUniformWindow().build();
+            Set<String> windows = monitor.getConfiguration().getWindowNames();
+            assertFalse(windows.contains(GcMonitorConfiguration.UNIFORM_WINDOW_NAME));
+        }
+
     }
 
+    public static class CollectorsSettingsTest extends GcMonitorBuilderTestBase {
+
+        @Test
+        public void allCollectorsFromJvmShouldBeUsedByDefault() {
+            GcMonitor monitor = builder.build();
+            for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
+                assertTrue(monitor.getConfiguration().getCollectorNames().contains(bean.getName()));
+            }
+        }
+
+        @Test
+        public void aggregationShouldBeEnabledByDefault() {
+            GarbageCollectorMXBeanMock mock1 = new GarbageCollectorMXBeanMock("terminator-1");
+            GarbageCollectorMXBeanMock mock2 = new GarbageCollectorMXBeanMock("terminator-2");
+            GcMonitor monitor = GcMonitor.builder(Arrays.asList(mock1, mock2)).build();
+            assertTrue(monitor.getConfiguration().getCollectorNames().contains(GcMonitorConfiguration.AGGREGATED_COLLECTOR_NAME));
+        }
+
+        @Test
+        public void testDisableAggregation() {
+            GarbageCollectorMXBeanMock mock1 = new GarbageCollectorMXBeanMock("terminator-1");
+            GarbageCollectorMXBeanMock mock2 = new GarbageCollectorMXBeanMock("terminator-2");
+            GcMonitor monitor = GcMonitor.builder(Arrays.asList(mock1, mock2))
+                    .withoutCollectorsAggregation()
+                    .build();
+            assertFalse(monitor.getConfiguration().getCollectorNames().contains(GcMonitorConfiguration.AGGREGATED_COLLECTOR_NAME));
+        }
+
+        @Test
+        public void aggregationShouldBeDisabledInCaseOfSingleCollector() {
+            GarbageCollectorMXBeanMock mock = new GarbageCollectorMXBeanMock("terminator");
+            GcMonitor monitor = GcMonitor.builder(Arrays.asList(mock)).build();
+            SortedSet<String> collectorNames = monitor.getConfiguration().getCollectorNames();
+            assertEquals(collectorNames, Collections.singleton("terminator"));
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void multipleCollectorsWithSameNameShouldBeDisabled() {
+            GarbageCollectorMXBeanMock mock1 = new GarbageCollectorMXBeanMock("terminator");
+            GarbageCollectorMXBeanMock mock2 = new GarbageCollectorMXBeanMock("terminator");
+            GcMonitor.builder(Arrays.asList(mock1, mock2)).build();
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void nullCollectorShouldBeDisabled() {
+            GarbageCollectorMXBeanMock mock1 = new GarbageCollectorMXBeanMock("terminator");
+            GarbageCollectorMXBeanMock mock2 = null;
+            GcMonitor.builder(Arrays.asList(mock1, mock2)).build();
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void emptyCollectorCollectionShouldBeDisabled() {
+            GcMonitor.builder(Collections.emptyList());
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void nullCollectorCollectionShouldBeDisabled() {
+            GcMonitor.builder(null);
+        }
+
+    }
+
+    public static class ClockSettingsTest extends GcMonitorBuilderTestBase {
+
+        @Test(expected = IllegalArgumentException.class)
+        public void nullClockShouldBeDeprecated() {
+            builder.withClock(null);
+        }
+
+        @Test
+        public void applyClockSettingsToMonitor() {
+            Clock clock = System::currentTimeMillis;
+            builder.withClock(clock);
+            GcMonitor monitor = builder.build();
+            assertSame(clock, monitor.getConfiguration().getClock());
+        }
+
+    }
 
 }

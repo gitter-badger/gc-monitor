@@ -26,6 +26,8 @@ import javax.management.Notification;
 import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.util.Collection;
 
 public class GcMonitor implements NotificationListener {
 
@@ -37,7 +39,12 @@ public class GcMonitor implements NotificationListener {
     private boolean stopped = false;
 
     public static GcMonitorBuilder builder() {
-        return new GcMonitorBuilder();
+        Collection<GarbageCollectorMXBean> garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
+        return new GcMonitorBuilder(garbageCollectorMXBeans);
+    }
+
+    public static GcMonitorBuilder builder(Collection<GarbageCollectorMXBean> garbageCollectorMXBeans) {
+        return new GcMonitorBuilder(garbageCollectorMXBeans);
     }
 
     GcMonitor(GcMonitorConfiguration configuration) {

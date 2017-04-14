@@ -14,8 +14,7 @@
  *    limitations under the License.
  */
 
-
-import javax.management.*;
+package io.github.gcmonitor;import javax.management.*;
 import java.lang.management.GarbageCollectorMXBean;
 import java.util.HashMap;
 import java.util.Map;

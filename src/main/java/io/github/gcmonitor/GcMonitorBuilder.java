@@ -21,7 +21,6 @@ import io.github.gcmonitor.stat.WindowSpecification;
 import com.github.rollingmetrics.util.Clock;
 
 import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.*;
 
@@ -29,7 +28,7 @@ import java.util.*;
 public class GcMonitorBuilder {
 
     private final SortedMap<String, WindowSpecification> windows;
-    private List<GarbageCollectorMXBean> garbageCollectorMXBeans;
+    private final List<GarbageCollectorMXBean> garbageCollectorMXBeans;
     private double[] percentiles = GcMonitorConfiguration.DEFAULT_PERCENTILES;
     private boolean aggregateStatFromDifferentCollectors = true;
     private Clock clock = Clock.DEFAULT_CLOCK;
@@ -38,10 +37,11 @@ public class GcMonitorBuilder {
         return new GcMonitor(createConfiguration());
     }
 
-    GcMonitorBuilder() {
+    GcMonitorBuilder(Collection<GarbageCollectorMXBean> garbageCollectorMXBeans) {
+        checkMbeans(garbageCollectorMXBeans);
         this.windows = new TreeMap<>();
         this.windows.put(GcMonitorConfiguration.UNIFORM_WINDOW_NAME, WindowSpecification.uniform());
-        this.garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
+        this.garbageCollectorMXBeans = new ArrayList<>(garbageCollectorMXBeans);
     }
 
     public GcMonitorBuilder withPercentiles(double[] percentiles) {
@@ -62,12 +62,6 @@ public class GcMonitorBuilder {
         return this;
     }
 
-    public GcMonitorBuilder withGarbageCollectorMXBeans(List<GarbageCollectorMXBean> garbageCollectorMXBeans) {
-        checkMbeansCount(garbageCollectorMXBeans);
-        this.garbageCollectorMXBeans = garbageCollectorMXBeans;
-        return this;
-    }
-
     public GcMonitorBuilder withClock(Clock clock) {
         if (clock == null) {
             throw new IllegalArgumentException("clock should not be null");
@@ -76,19 +70,32 @@ public class GcMonitorBuilder {
         return this;
     }
 
-    public GcMonitorBuilder aggregateStatFromDifferentCollectors(boolean aggregateStatFromDifferentCollectors) {
-        this.aggregateStatFromDifferentCollectors = aggregateStatFromDifferentCollectors;
+    public GcMonitorBuilder withoutCollectorsAggregation() {
+        this.aggregateStatFromDifferentCollectors = false;
         return this;
     }
 
     GcMonitorConfiguration createConfiguration() {
-        checkMbeansCount(garbageCollectorMXBeans);
         return new GcMonitorConfiguration(windows, percentiles, garbageCollectorMXBeans, aggregateStatFromDifferentCollectors, clock);
     }
 
-    private void checkMbeansCount(List<GarbageCollectorMXBean> garbageCollectorMXBeans) {
+    private void checkMbeans(Collection<GarbageCollectorMXBean> garbageCollectorMXBeans) {
+        if (garbageCollectorMXBeans == null) {
+            throw new IllegalArgumentException("garbageCollectorMXBeans should not be null");
+        }
         if (garbageCollectorMXBeans.isEmpty()) {
-            throw new IllegalArgumentException("There are no one GarbageCollectorMXBean in the JVM");
+            throw new IllegalArgumentException("garbageCollectorMXBeans should not be empty");
+        }
+        Set<String> names = new HashSet<>();
+        for (GarbageCollectorMXBean bean : garbageCollectorMXBeans) {
+            if (bean == null) {
+                throw new IllegalArgumentException("garbageCollectorMXBeans should not contain null elements");
+            }
+            String name = bean.getName();
+            if (names.contains(name)) {
+                throw new IllegalArgumentException("garbageCollectorMXBeans contains two collectors with name [" + name + "]");
+            }
+            names.add(name);
         }
     }
 
