@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class GcMonitorConfiguration {
 
+    public static final double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
     public static final String AGGREGATED_COLLECTOR_NAME = "AggregatedCollector";
     public static final String UNIFORM_WINDOW_NAME = "uniform";
     public static final int MAX_WINDOWS = 20;
@@ -40,7 +41,7 @@ public class GcMonitorConfiguration {
     private final boolean aggregateDifferentCollectors;
     private final Clock clock;
 
-    public GcMonitorConfiguration(SortedMap<String, WindowSpecification> windowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, boolean aggregateDifferentCollectors, Clock clock) {
+    GcMonitorConfiguration(SortedMap<String, WindowSpecification> windowSpecifications, double[] percentiles, List<GarbageCollectorMXBean> garbageCollectorMXBeans, boolean aggregateDifferentCollectors, Clock clock) {
         this.windowSpecifications = Collections.unmodifiableSortedMap(windowSpecifications);
         this.garbageCollectorMXBeans = Collections.unmodifiableList(garbageCollectorMXBeans);
         this.percentiles = percentiles.clone();

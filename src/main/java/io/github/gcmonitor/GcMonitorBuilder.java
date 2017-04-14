@@ -23,19 +23,14 @@ import com.github.rollingmetrics.util.Clock;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.List;
-import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 
 public class GcMonitorBuilder {
 
-    public static final double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
-
     private final SortedMap<String, WindowSpecification> windows;
     private List<GarbageCollectorMXBean> garbageCollectorMXBeans;
-    private double[] percentiles = DEFAULT_PERCENTILES;
+    private double[] percentiles = GcMonitorConfiguration.DEFAULT_PERCENTILES;
     private boolean aggregateStatFromDifferentCollectors = true;
     private Clock clock = Clock.DEFAULT_CLOCK;
 
@@ -50,11 +45,14 @@ public class GcMonitorBuilder {
     }
 
     public GcMonitorBuilder withPercentiles(double[] percentiles) {
-        this.percentiles = percentiles;
+        validatePerventiles(percentiles);
+        this.percentiles = percentiles.clone();
+        Arrays.sort(this.percentiles);
         return this;
     }
 
     public GcMonitorBuilder addRollingWindow(String windowName, Duration rollingWindow) {
+        validateRollingWindow(windowName, rollingWindow);
         windows.put(windowName, WindowSpecification.rollingWindow(rollingWindow));
         return this;
     }
@@ -71,7 +69,10 @@ public class GcMonitorBuilder {
     }
 
     public GcMonitorBuilder withClock(Clock clock) {
-        this.clock = Objects.requireNonNull(clock);
+        if (clock == null) {
+            throw new IllegalArgumentException("clock should not be null");
+        }
+        this.clock = clock;
         return this;
     }
 
@@ -88,6 +89,43 @@ public class GcMonitorBuilder {
     private void checkMbeansCount(List<GarbageCollectorMXBean> garbageCollectorMXBeans) {
         if (garbageCollectorMXBeans.isEmpty()) {
             throw new IllegalArgumentException("There are no one GarbageCollectorMXBean in the JVM");
+        }
+    }
+
+    private void validatePerventiles(double[] percentiles) {
+        if (percentiles == null) {
+            throw new IllegalArgumentException("percentiles array should not be null");
+        }
+        if (percentiles.length == 0) {
+            throw new IllegalArgumentException("percentiles array should not be empty");
+        }
+
+        for (int i = 0; i < percentiles.length; i++) {
+            if (percentiles[i] <= 0.0 || percentiles[i] > 1.0) {
+                String msg = "Wrong percentile " + percentiles[i] + " at index " + i + ", percentile should be between 0 and 1";
+                throw new IllegalArgumentException(msg);
+            }
+            for (int j = i + 1; j < percentiles.length; j++) {
+                if (percentiles[i] == percentiles[j]) {
+                    String msg = "percentile " + percentiles[i] + " has been duplicated at positions [" + i + "," + j + "]";
+                    throw new IllegalArgumentException(msg);
+                }
+            }
+        }
+    }
+
+    private void validateRollingWindow(String windowName, Duration rollingWindow) {
+        if (windowName == null) {
+            throw new IllegalArgumentException("windowName should not be null");
+        }
+        if (windows.containsKey(windowName)) {
+            throw new IllegalArgumentException("Window with name " + windowName + " already configured");
+        }
+        if (rollingWindow == null) {
+            throw new IllegalArgumentException("rollingWindow should not be null");
+        }
+        if (rollingWindow.isZero() || rollingWindow.isNegative()) {
+            throw new IllegalArgumentException("rollingWindow should be a positive duration");
         }
     }
 
